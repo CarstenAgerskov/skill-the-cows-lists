@@ -1,0 +1,3 @@
+(add) (?P<itemName>.*) (to my) (?P<listName>.*) (list)
+(add) (?P<itemName>.*) (to list) (?P<listName>.*)
+
