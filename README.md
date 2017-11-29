@@ -35,7 +35,7 @@ The configuration to add to mycroft.conf looks like this.
     "secret": "many_characters"
   }  
 ```
-
+It is possible to make the configuration at your home.mycroft.ai page as well. But remember that the configuration is the key to your Remember The Milk lists. 
 
 ## Examples
 * ""Hey Mycroft, add milk to my grocery list""
