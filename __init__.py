@@ -1,24 +1,20 @@
-# Copyright 2016 Mycroft AI, Inc.
-#
-# This file is part of Mycroft Core.
-#
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
+'''
+skill remember-the-milk
+Copyright (C) 2017  Carsten Agerskov
 
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-# Visit https://docs.mycroft.ai/skill.creation for more detailed information
-# on the structure of this skill and its containing folder, as well as
-# instructions for designing your own skill based on this template.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+'''
 
 from os.path import dirname
 
@@ -60,11 +56,7 @@ class RtmSkill(MycroftSkill):
 
     def __init__(self):
         super(RtmSkill, self).__init__(name="RtmSkill")
-        self.defaultParam = list([
-            ['api_key', self.config.get('api_key')],
-            ['auth_token', self.config.get('auth_token')],
-            ['format', 'json']])
-        self.secret = self.config.get('secret')
+        self.defaultParam = list([['format', 'json']])
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
@@ -73,9 +65,33 @@ class RtmSkill(MycroftSkill):
             require("AddItemToList").require(ITEM_PARAMETER).require(LIST_PARAMETER).build()
         self.register_intent(addItemToListIntent, self.add_item_to_list_intent)
 
+    def get_config(self):
+        try:
+            try:
+                if not filter(lambda x: x[0] == 'api_key', self.defaultParam):
+                    self.defaultParam.extend([['api_key', self.config.get('api_key')]])
+            except AttributeError:
+                self.defaultParam.extend([['api_key', str(self.settings.get('api_key', None))]])
+
+            try:
+                if not filter(lambda x: x[0] == 'auth_token', self.defaultParam):
+                    self.defaultParam.extend([['auth_token', self.config.get('auth_token')]])
+            except AttributeError:
+                self.defaultParam.extend([['auth_token', str(self.settings.get('auth_token', None))]])
+
+            try:
+                if not hasattr(self, 'secret'):
+                    self.secret = self.config.get('secret')
+            except AttributeError:
+                self.secret = str(self.settings.get('secret', None))
+
+        except:
+            self.speak_dialog('ConfigNotFound')
+
 
     def add_item_to_list_intent(self, message):
         try:
+            self.get_config()
             item = message.data.get(ITEM_PARAMETER)
             list = message.data.get(LIST_PARAMETER)
 

@@ -1,0 +1,31 @@
+{
+  "identifier": "RtmSkill",
+  "name": "Skill remember the milk",
+  "skillMetadata": {
+      "sections": [
+          {
+              "name": "Authentication",
+              "fields": [
+                  {
+                     "name": "api_key",
+                     "type": "text",
+                     "label": "API key",
+                     "value": ""
+                  },
+                  {
+                     "name": "auth_token",
+                     "type": "text",
+                     "label": "Authentication token",
+                     "value": ""
+                  },
+                  {
+                     "name": "secret",
+                     "type": "text",
+                     "label": "Secret",
+                     "value": ""
+                  }
+              ]
+          }
+      ]
+  }
+}
