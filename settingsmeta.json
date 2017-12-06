@@ -1,6 +1,6 @@
 {
   "identifier": "RtmSkill",
-  "name": "Skill remember the milk",
+  "name": "Skill the cows lists",
   "skillMetadata": {
       "sections": [
           {
@@ -10,12 +10,6 @@
                      "name": "api_key",
                      "type": "text",
                      "label": "API key",
-                     "value": ""
-                  },
-                  {
-                     "name": "auth_token",
-                     "type": "text",
-                     "label": "Authentication token",
                      "value": ""
                   },
                   {

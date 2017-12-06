@@ -1,4 +1,4 @@
-## Skill The Cows Lists
+## Skill Remember The Milk
 Mycroft skill for "Remember The Milk"
 
 ## Description
@@ -21,21 +21,34 @@ The skill is using Remember The Milk ["smart add"](https://www.rememberthemilk.c
 will add an item called "remember to call home" to the Remember The Milk's Inbox, and set the due date to tomorrow at 9.
 
 ### Configuration
-To access your Remember The Milk account via the rest API, it is neccesary to apply for an API key at https://www.rememberthemilk.com/services/api/
+To access your Remember The Milk account via the rest API, it is neccesary to apply for an API key at
+[https://www.rememberthemilk.com/services/api/](https://www.rememberthemilk.com/services/api/). Click on the "Apply for an API key" button, and fill in the information. You will get a mail from remember the milk containing:
+* An api key
+* A shared secret
 
-That will give you an API key, and a shared secret. With these you must obtain an auth token, as described here:  https://www.rememberthemilk.com/services/api/
+Head over to [https://home.mycroft.ai](https://home.mycroft.ai), log on, and go to "Skills" section. If you have installed
+the cows list skill, it is possible enter the api key and the secret from remember the milk in the configuration section "Skill the cows lists".
 
-Automation of the above process is needed, but I still have to figure out the best way, given that Mycroft does not have a GUI.
+Then say "Hey Mycroft, authenticate with remember the milk"
 
-The configuration to add to mycroft.conf looks like this.
+Mycroft will send you a mail containing an authentication link, pointing to remember the milk. Click on the link, and
+authenticate Mycroft as described there.
+
+After authentication with remember the milk, and only then, say:
+
+"Hey Mycroft, get a token for remember the milk"
+
+Now, Mycroft is ready to add items to your lists.
+
+As an alternative, if you don't want to store your api key and secret at home.mycroft.ai, you can instead add the following
+to mycroft.conf:
+
 ```json
-  "RtmSkill": {
+  "TheCowsLists": {
     "api_key": "many_characters",
-    "auth_token": "many_characters",
-    "secret": "many_characters"
+    "auth_token": "many_characters"
   }  
 ```
-It is possible to make the configuration at your home.mycroft.ai page as well. But remember that the configuration is the key to your Remember The Milk lists.
 
 ## Examples
 * ""Hey Mycroft, add milk to my grocery list""
