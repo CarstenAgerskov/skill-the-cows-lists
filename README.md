@@ -1,13 +1,10 @@
-## Skill Remember The Milk
+## Skill The Cows Lists
 Mycroft skill for "Remember The Milk"
 
 ## Description
 This skill adds [Remember The Milk](https://www.rememberthemilk.com/) support to [Mycroft](https://mycroft.ai/).
 The skill use Remember The Milk's [rest interface](https://www.rememberthemilk.com/services/api/).
-This project is still in its early phases, two things to be aware of:
-
-* An API key, secret and token is required, the skill cannot obtain these
-* The only working command is adding items to lists, as shown below:
+This project is still in its early phases. Authentication and add item to list are currently the only commands.
 
 For example:
 
