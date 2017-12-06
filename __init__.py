@@ -206,7 +206,7 @@ class CowsLists(MycroftSkill):
 
 
             self.settings.__setitem__("auth_token",auth_token['rsp']['auth']['token'])
-            self.speak_dialog("GotConfig")
+            self.speak_dialog("GotToken")
 
         except Exception as e:
             LOGGER.error("Error: {0}".format(e))
