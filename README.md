@@ -47,6 +47,12 @@ to mycroft.conf:
   }  
 ```
 
+#### If your token expire or become invalid
+On rare occasions the token may expire or become invalid. In that case you must repeat the steps above.
+You still have to click on the authentication link in the mail, even though the page you are redirected to will say
+that you are already authenticated (you may have to log in, if your browser is not already logged in to remember
+the milk).
+
 ## Examples
 * ""Hey Mycroft, add milk to my grocery list""
 * ""Hey Mycroft, add remember to call home tomorrow at 9 to list Inbox""
