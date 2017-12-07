@@ -43,7 +43,7 @@ to mycroft.conf:
 ```json
   "TheCowsLists": {
     "api_key": "many_characters",
-    "auth_token": "many_characters"
+    "secret": "many_characters"
   }  
 ```
 
