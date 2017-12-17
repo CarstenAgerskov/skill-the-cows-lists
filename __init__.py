@@ -1,5 +1,5 @@
-'''
-skill remember-the-milk
+"""
+skill the-cows-lists
 Copyright (C) 2017  Carsten Agerskov
 
 This program is free software: you can redistribute it and/or modify
@@ -14,17 +14,17 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
+"""
 
 from os.path import dirname
-
 from adapt.intent import IntentBuilder
 from mycroft.skills.core import MycroftSkill
 from mycroft.util.log import getLogger
 from hashlib import md5
-import urllib2
+from urllib2 import urlopen
 import urllib
 import json
+import sys
 
 __author__ = 'cagerskov'
 
@@ -35,29 +35,32 @@ ITEM_PARAMETER = "itemName"
 LIST_PARAMETER = "listName"
 ERROR_TEXT_PARAMETER = "errorText"
 ERROR_CODE_PARAMETER = "errorCode"
+FUNCTION_NAME_PARAMETER = "functionName"
+LINE_PARAMETER = "lineNumber"
 
 LOGGER = getLogger(__name__)
 
+
 class RtmRest:
-    def __init__(self,defaultParam,secret):
+    def __init__(self, default_param, secret):
         self.param = list([['format', 'json']])
-        self.param.extend(defaultParam)
+        self.param.extend(default_param)
         self.secret = secret
 
-    def add(self,paramList):
-        self.param.extend(paramList)
+    def add(self, param_list):
+        self.param.extend(param_list)
 
-    def getParamString(self):
+    def get_param_string(self):
         self.param.sort()
-        self.paramString= '?' + ''.join(map((lambda x: x[0]+ '=' + urllib.quote(x[1].encode('utf8')) + '&'), self.param)) \
-                          + 'api_sig=' + md5(self.secret + ''.join(map((lambda x: x[0]+x[1]), self.param))).hexdigest()
-        return self.paramString
+        return '?' + ''.join(map((lambda x: x[0] + '=' + urllib.quote(x[1].encode('utf8')) + '&'), self.param)) \
+               + 'api_sig=' + md5(self.secret + ''.join(map((lambda x: x[0] + x[1]), self.param))).hexdigest()
 
     def call(self):
-        s = urllib2.urlopen(RTM_URL + self.getParamString())
+        s = urlopen(RTM_URL + self.get_param_string())
         response = json.load(s)
         s.close()
         return response
+
 
 class RtmParam:
     def __init__(self):
@@ -66,11 +69,11 @@ class RtmParam:
         self.auth_token = None
         self.frob = None
 
-    def getBasicParam(self):
+    def get_basic_param(self):
         return list([['api_key', self.api_key]])
 
-    def getFullParam(self):
-        return self.getBasicParam() + [['auth_token', self.auth_token]]
+    def get_full_param(self):
+        return self.get_basic_param() + [['auth_token', self.auth_token]]
 
 
 class CowsLists(MycroftSkill):
@@ -81,17 +84,13 @@ class CowsLists(MycroftSkill):
     def initialize(self):
         self.load_data_files(dirname(__file__))
 
-        addItemToListIntent = IntentBuilder("AddItemToListIntent").\
-            require("AddItemToList").require(ITEM_PARAMETER).require(LIST_PARAMETER).build()
-        self.register_intent(addItemToListIntent, self.add_item_to_list_intent)
+        self.register_intent(IntentBuilder("AddItemToListIntent").require("AddItemToList").require(
+            ITEM_PARAMETER).require(LIST_PARAMETER).build(), self.add_item_to_list_intent)
 
-        getTokenIntent = IntentBuilder("GetTokenIntent").\
-            require("GetToken").build()
-        self.register_intent(getTokenIntent, self.get_token_intent)
+        self.register_intent(IntentBuilder("GetTokenIntent").require("GetToken").build(), self.get_token_intent)
 
-        authenticateIntent = IntentBuilder("AuthenticateIntent").\
-            require("Authenticate").build()
-        self.register_intent(authenticateIntent, self.authenticate_intent)
+        self.register_intent(IntentBuilder("AuthenticateIntent").require("Authenticate").build(),
+                             self.authenticate_intent)
 
         self.settings.load_skill_settings()
 
@@ -101,13 +100,13 @@ class CowsLists(MycroftSkill):
                 if not self.rtmParam.api_key:
                     self.rtmParam.api_key = self.config.get('api_key')
             except AttributeError:
-                self.rtmParam.api_key = str(self.settings.get('api_key', None))
+                self.rtmParam.api_key = self.settings.get('api_key')
 
             try:
                 if not hasattr(self, 'secret'):
                     self.rtmParam.secret = self.config.get('secret')
             except AttributeError:
-                self.rtmParam.secret = str(self.settings.get('secret', None))
+                self.rtmParam.secret = self.settings.get('secret')
 
             if not self.rtmParam.api_key or not self.rtmParam.secret:
                 raise Exception("api key or secret not configured")
@@ -119,7 +118,7 @@ class CowsLists(MycroftSkill):
     def get_token(self):
         try:
             if not self.rtmParam.auth_token:
-                self.rtmParam.auth_token = str(self.settings.get('auth_token', None))
+                self.rtmParam.auth_token = self.settings.get('auth_token')
         except AttributeError:
             pass
 
@@ -127,22 +126,22 @@ class CowsLists(MycroftSkill):
         if not self.rtmParam.auth_token:
             return False
 
-        r = RtmRest(self.rtmParam.getFullParam(), self.rtmParam.secret)
+        r = RtmRest(self.rtmParam.get_full_param(), self.rtmParam.secret)
         r.add([["method", 'rtm.auth.checkToken']])
         check_token = r.call()
 
         if check_token['rsp']['stat'] == 'fail' and check_token['rsp']['err']['code'] != '98':
             self.speak_dialog('RestResponseError',
-                              { ERROR_TEXT_PARAMETER: check_token['rsp']['err']['msg'],
-                                ERROR_CODE_PARAMETER: check_token['rsp']['err']['code']})
-            raise Exception('Error verifying token:' + check_token)
+                              {ERROR_TEXT_PARAMETER: check_token['rsp']['err']['msg'],
+                               ERROR_CODE_PARAMETER: check_token['rsp']['err']['code']})
+            raise Exception('Error verifying token:' + check_token['rsp']['err']['msg'])
 
         if check_token['rsp']['stat'] == 'fail':
             return False
 
         return True
 
-    def authenticate_intent(self, message):
+    def authenticate_intent(self):
         try:
             self.get_config()
             self.get_token()
@@ -151,7 +150,7 @@ class CowsLists(MycroftSkill):
                 self.speak_dialog("TokenValid")
                 return
 
-            r = RtmRest(self.rtmParam.getBasicParam(), self.rtmParam.secret)
+            r = RtmRest(self.rtmParam.get_basic_param(), self.rtmParam.secret)
             r.add([["method", 'rtm.auth.getFrob']])
             frob = r.call()
 
@@ -159,28 +158,28 @@ class CowsLists(MycroftSkill):
                 self.speak_dialog('RestResponseError',
                                   {ERROR_TEXT_PARAMETER: frob['rsp']['err']['msg'],
                                    ERROR_CODE_PARAMETER: frob['rsp']['err']['code']})
-                raise Exception('Could not get frob, response was ' + frob)
+                return
 
             self.rtmParam.frob = str(frob['rsp']['frob'])
 
-            authUrl = AUTH_URL + '?api_key=' + self.rtmParam.api_key + '&perms=delete&frob=' + self.rtmParam.frob \
-                      + '&api_sig=' + md5(self.rtmParam.secret
-                                         + 'api_key' + self.rtmParam.api_key
-                                         + 'frob' + self.rtmParam.frob
-                                         + 'permsdelete').hexdigest()
+            auth_url = AUTH_URL + '?api_key=' + self.rtmParam.api_key + '&perms=delete&frob=' + self.rtmParam.frob \
+                       + '&api_sig=' + md5(self.rtmParam.secret + 'api_key' + self.rtmParam.api_key + 'frob'
+                                           + self.rtmParam.frob + 'permsdelete').hexdigest()
 
+            mail_body = "Use the link below to authenticate Mycroft with remember the milk.<br>" \
+                        + "After authentication, say: Hey Mycroft, get a token for remember the milk<br><br>" \
+                        + '<a href = "' + auth_url + '">' + auth_url + '</a>'
 
-            mailBody =  "Use the link below to authenticate Mycroft with remember the milk.<br>" + \
-                        "After authentication, say: Hey Mycroft, get a token for remember the milk<br><br>" + \
-                        '<a href = "' + authUrl + '">' + authUrl + '</a>'
-
-            self.send_email("Authentication",mailBody)
+            self.send_email("Authentication", mail_body)
             self.speak_dialog("EmailSent")
 
         except Exception as e:
-            LOGGER.error("Error: {0}".format(e))
+            LOGGER.exception("Error in authenticate_intent: {0}".format(e))
+            self.speak_dialog('GeneralError',
+                              {FUNCTION_NAME_PARAMETER: "authenticate intent",
+                               LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
 
-    def get_token_intent(self, message):
+    def get_token_intent(self):
         try:
             self.get_config()
             self.get_token()
@@ -193,7 +192,7 @@ class CowsLists(MycroftSkill):
                 self.speak_dialog('AuthenticateBeforeToken')
                 return
 
-            r = RtmRest(self.rtmParam.getBasicParam(), self.rtmParam.secret)
+            r = RtmRest(self.rtmParam.get_basic_param(), self.rtmParam.secret)
             r.add([["method", 'rtm.auth.getToken'],
                    ["frob", self.rtmParam.frob]])
             auth_token = r.call()
@@ -202,74 +201,84 @@ class CowsLists(MycroftSkill):
                 self.speak_dialog('RestResponseError',
                                   {ERROR_TEXT_PARAMETER: auth_token['rsp']['err']['msg'],
                                    ERROR_CODE_PARAMETER: auth_token['rsp']['err']['code']})
-                raise Exception('Could not get auth token, response was ' + auth_token)
+                return
 
-
-            self.settings.__setitem__("auth_token",auth_token['rsp']['auth']['token'])
+            self.settings.__setitem__("auth_token", auth_token['rsp']['auth']['token'])
             self.speak_dialog("GotToken")
 
         except Exception as e:
-            LOGGER.error("Error: {0}".format(e))
+            LOGGER.exception("Error in get_token_intent: {0}".format(e))
+            self.speak_dialog('GeneralError',
+                              {FUNCTION_NAME_PARAMETER: "get token intent",
+                               LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
 
     def add_item_to_list_intent(self, message):
         try:
             self.get_config()
             self.get_token()
 
+            if not self.rtmParam.auth_token and self.rtmParam.frob:
+                self.speak_dialog("InAuthentication")
+                return
+
             if not self.rtmParam.auth_token:
                 self.speak_dialog("NotAuthenticated")
                 return
 
-            item = message.data.get(ITEM_PARAMETER)
-            list = message.data.get(LIST_PARAMETER)
-
-            r = RtmRest(self.rtmParam.getFullParam(), self.rtmParam.secret)
+            r = RtmRest(self.rtmParam.get_full_param(), self.rtmParam.secret)
             r.add([["method", "rtm.lists.getList"]])
-            listResult = r.call()
+            list_result = r.call()
 
-            if listResult['rsp']['stat'] == 'fail':
+            if list_result['rsp']['stat'] == 'fail':
                 self.speak_dialog('RestResponseError',
-                                  {ERROR_TEXT_PARAMETER: listResult['rsp']['err']['msg'],
-                                   ERROR_CODE_PARAMETER: listResult['rsp']['err']['code']})
-                raise Exception('Error finding lists:' + listResult)
-
-            try:
-                listId = filter(lambda x: x['name'].lower() == list, listResult['rsp']['lists']['list'])[0]['id']
-            except IndexError:
-                self.speak_dialog('ListNotFound', {LIST_PARAMETER: list })
+                                  {ERROR_TEXT_PARAMETER: list_result['rsp']['err']['msg'],
+                                   ERROR_CODE_PARAMETER: list_result['rsp']['err']['code']})
                 return
 
-            r = RtmRest(self.rtmParam.getFullParam(), self.rtmParam.secret)
+            item_name = message.data.get(ITEM_PARAMETER)
+            list_name = message.data.get(LIST_PARAMETER)
+
+            try:
+                list_id = filter(lambda x: x['name'].lower() == list_name, list_result['rsp']['lists']['list'])[0]['id']
+            except IndexError:
+                self.speak_dialog('ListNotFound', {LIST_PARAMETER: list_name})
+                return
+
+            r = RtmRest(self.rtmParam.get_full_param(), self.rtmParam.secret)
             r.add([['method', 'rtm.timelines.create']])
-            timelineResult = r.call()
+            timeline_result = r.call()
 
-            if timelineResult['rsp']['stat'] == 'fail':
+            if timeline_result['rsp']['stat'] == 'fail':
                 self.speak_dialog('RestResponseError',
-                                  {ERROR_TEXT_PARAMETER: timelineResult['rsp']['err']['msg'],
-                                   ERROR_CODE_PARAMETER: timelineResult['rsp']['err']['code']})
-                raise Exception('Error getting timeline:' + timelineResult)
+                                  {ERROR_TEXT_PARAMETER: timeline_result['rsp']['err']['msg'],
+                                   ERROR_CODE_PARAMETER: timeline_result['rsp']['err']['code']})
+                return
 
-            r = RtmRest(self.rtmParam.getFullParam(), self.rtmParam.secret)
+            r = RtmRest(self.rtmParam.get_full_param(), self.rtmParam.secret)
             r.add([['method', 'rtm.tasks.add'],
-                   ['list_id', listId],
-                   ['name', item],
+                   ['list_id', list_id],
+                   ['name', item_name],
                    ['parse', '1'],
-                   ['timeline', timelineResult['rsp']['timeline']]])
-            insertResult = r.call()
+                   ['timeline', timeline_result['rsp']['timeline']]])
+            insert_result = r.call()
 
-            if insertResult['rsp']['stat'] == 'fail':
+            if insert_result['rsp']['stat'] == 'fail':
                 self.speak_dialog('RestResponseError',
-                                  {ERROR_TEXT_PARAMETER: insertResult['rsp']['err']['msg'],
-                                   ERROR_CODE_PARAMETER: insertResult['rsp']['err']['code']})
-                raise Exception('Error adding item to list:' + insertResult)
+                                  {ERROR_TEXT_PARAMETER: insert_result['rsp']['err']['msg'],
+                                   ERROR_CODE_PARAMETER: insert_result['rsp']['err']['code']})
+                return
 
-            self.speak_dialog('AddItemToList', {ITEM_PARAMETER : item , LIST_PARAMETER : list })
+            self.speak_dialog('AddItemToList', {ITEM_PARAMETER: item_name, LIST_PARAMETER: list_name})
 
         except Exception as e:
-            LOGGER.error("Error: {0}".format(e))
+            LOGGER.exception("Error in add_item_to_list_intent: {0}".format(e))
+            self.speak_dialog('GeneralError',
+                              {FUNCTION_NAME_PARAMETER: "add item to list intent",
+                               LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
 
     def stop(self):
         pass
+
 
 def create_skill():
     return CowsLists()

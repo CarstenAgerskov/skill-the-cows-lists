@@ -1,1 +1,1 @@
-Communication error, Remember The Milk says {{errorMessage}}, error code {{errorCode}}
+Communication error, Remember The Milk says {{errorText}}, error code {{errorCode}}
