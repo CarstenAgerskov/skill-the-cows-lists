@@ -25,6 +25,8 @@ from urllib2 import urlopen
 import urllib
 import json
 import sys
+import ConfigParser
+import os
 
 __author__ = 'cagerskov'
 
@@ -38,7 +40,11 @@ ERROR_CODE_PARAMETER = "errorCode"
 FUNCTION_NAME_PARAMETER = "functionName"
 LINE_PARAMETER = "lineNumber"
 
+HOME_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_FILE = HOME_DIR + "/cowslist.cfg"
 LOGGER = getLogger(__name__)
+
+config = ConfigParser.ConfigParser()
 
 
 class RtmRest:
@@ -116,11 +122,10 @@ class CowsLists(MycroftSkill):
             raise Exception('Configuration not found, error {0}'.format(e))
 
     def get_token(self):
-        try:
-            if not self.rtmParam.auth_token:
-                self.rtmParam.auth_token = self.settings.get('auth_token')
-        except AttributeError:
-            pass
+        if not self.rtmParam.auth_token:
+            config.read(CONFIG_FILE)
+            if config.has_option('auth', 'auth_token'):
+                self.rtmParam.auth_token = config.get('auth', 'auth_token')
 
     def verify_token_validity(self):
         if not self.rtmParam.auth_token:
@@ -203,7 +208,15 @@ class CowsLists(MycroftSkill):
                                    ERROR_CODE_PARAMETER: auth_token['rsp']['err']['code']})
                 return
 
-            self.settings.__setitem__("auth_token", auth_token['rsp']['auth']['token'])
+            if not config.has_section('auth'):
+                config.add_section('auth')
+
+            config.set('auth', 'auth_token', auth_token['rsp']['auth']['token'])
+            with open(CONFIG_FILE, 'wb') as configfile:
+                config.write(configfile)
+
+            self.rtmParam.auth_token = auth_token['rsp']['auth']['token']
+
             self.speak_dialog("GotToken")
 
         except Exception as e:
