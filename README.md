@@ -17,6 +17,8 @@ The skill is using Remember The Milk ["smart add"](https://www.rememberthemilk.c
 
 will add an item called "remember to call home" to the Remember The Milk's Inbox, and set the due date to tomorrow at 9.
 
+Avoid using the word "list" in your list names in Remember The Milk, if you want the skill to interact with them. In the example above, the list name in Remember The Milk is "grocery" and not "grocery list". When talking to Mycroft, the word list is used to better qualify your intent.
+
 ### Configuration
 To access your Remember The Milk account via the rest API, it is neccesary to apply for an API key at
 [https://www.rememberthemilk.com/services/api/](https://www.rememberthemilk.com/services/api/). Click on the "Apply for an API key" button, and fill in the information. You will get a mail from remember the milk containing:
