@@ -1,1 +1,1 @@
-(authenticate with remember the milk)
+authenticate (?P<authenticateWord>.+) remember the milk$

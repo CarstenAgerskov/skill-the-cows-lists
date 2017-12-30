@@ -108,3 +108,6 @@ venv.bak/
 
 # config files
 *.cfg
+
+# Mycroft related
+settings.json

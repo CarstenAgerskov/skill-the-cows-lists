@@ -33,6 +33,7 @@ CONFIG_FILE = HOME_DIR + "/cowslist.cfg"
 
 config = ConfigParser.ConfigParser()
 
+
 class RtmRest:
     def __init__(self, default_param, secret):
         self.param = list([['format', 'json']])
@@ -55,8 +56,11 @@ class RtmRest:
 
 
 class RtmParam:
+    def __init__(self):
+        pass
+
     @classmethod
-    def resetParam(cls):
+    def reset_param(cls):
         cls.api_key = None
         cls.secret = None
         cls.auth_token = None
@@ -64,27 +68,52 @@ class RtmParam:
         cls.timeline = None
 
 
-def _get_basic_param(self):
+def _get_basic_param():
     return list([['api_key', RtmParam.api_key]])
 
 
-def _get_full_param(self):
-    return _get_basic_param(self) + [['auth_token', RtmParam.auth_token]]
+def _get_full_param():
+    return _get_basic_param() + [['auth_token', RtmParam.auth_token]]
 
 
-def _get_full_timeline_param(self):
-    return _get_full_param(self) + [['timeline', RtmParam.timeline]]
+def _get_full_timeline_param():
+    return _get_full_param() + [['timeline', RtmParam.timeline]]
 
 
-def get_token(self):
+def find_task_id(task_list, taskseries_id, task_id):
+    if 'list' not in task_list:
+        return None
+
+    task_match = None
+    taskseries_match = None
+    for taskseries in task_list['list']:
+        if not isinstance(taskseries['taskseries'], list):
+            if taskseries['taskseries']['id'] == taskseries_id:
+                taskseries_match = taskseries['taskseries']
+        else:
+            taskseries_match = filter(lambda x: x['id'] == taskseries_id, taskseries['taskseries'])
+
+    if not taskseries_match:
+        return None
+
+    if not isinstance(taskseries_match, list):
+        task_match = filter(lambda x: x['id'] == task_id, taskseries_match['task'])
+    else:
+        for task in taskseries_match:
+            task_match = filter(lambda x: x['id'] == task_id, task['task'])
+
+    return task_match
+
+
+def get_token():
     if not RtmParam.auth_token:
         config.read(CONFIG_FILE)
         if config.has_option('auth', 'auth_token'):
             RtmParam.auth_token = config.get('auth', 'auth_token')
 
 
-def get_new_token(self):
-    r = RtmRest(_get_basic_param(self), RtmParam.secret)
+def get_new_token():
+    r = RtmRest(_get_basic_param(), RtmParam.secret)
     r.add([["method", 'rtm.auth.getToken'],
            ["frob", RtmParam.frob]])
     auth_token = r.call()
@@ -104,8 +133,8 @@ def get_new_token(self):
     return None, None
 
 
-def get_timeline(self):
-    r = RtmRest(_get_full_param(self), RtmParam.secret)
+def get_timeline():
+    r = RtmRest(_get_full_param(), RtmParam.secret)
     r.add([['method', 'rtm.timelines.create']])
     timeline_result = r.call()
 
@@ -116,8 +145,8 @@ def get_timeline(self):
     return None, None
 
 
-def verify_token_validity(self):
-    r = RtmRest(_get_full_param(self), RtmParam.secret)
+def verify_token_validity():
+    r = RtmRest(_get_full_param(), RtmParam.secret)
     r.add([["method", 'rtm.auth.checkToken']])
     check_token = r.call()
 
@@ -127,8 +156,8 @@ def verify_token_validity(self):
     return None, None
 
 
-def get_frob(self):
-    r = RtmRest(_get_basic_param(self), RtmParam.secret)
+def get_frob():
+    r = RtmRest(_get_basic_param(), RtmParam.secret)
     r.add([["method", 'rtm.auth.getFrob']])
     frob = r.call()
 
@@ -139,13 +168,15 @@ def get_frob(self):
 
     return None, None
 
-def get_auth_url(self):
-    return AUTH_URL + '?api_key=' + RtmParam.api_key + '&perms=delete&frob=' + RtmParam.frob \
-               + '&api_sig=' + md5(RtmParam.secret + 'api_key' + RtmParam.api_key + 'frob'
-                                   + RtmParam.frob + 'permsdelete').hexdigest()
 
-def get_list(self):
-    r = RtmRest(_get_full_param(self), RtmParam.secret)
+def get_auth_url():
+    return AUTH_URL + '?api_key=' + RtmParam.api_key + '&perms=delete&frob=' + RtmParam.frob \
+           + '&api_sig=' + md5(RtmParam.secret + 'api_key' + RtmParam.api_key + 'frob'
+                               + RtmParam.frob + 'permsdelete').hexdigest()
+
+
+def get_list():
+    r = RtmRest(_get_full_param(), RtmParam.secret)
     r.add([["method", "rtm.lists.getList"]])
     list_result = r.call()
 
@@ -155,8 +186,8 @@ def get_list(self):
     return list_result['rsp']['lists']['list'], None, None
 
 
-def add_task(self,item_name,list_id):
-    r = RtmRest(_get_full_timeline_param(self), RtmParam.secret)
+def add_task(item_name, list_id):
+    r = RtmRest(_get_full_timeline_param(), RtmParam.secret)
     r.add([['method', 'rtm.tasks.add'],
            ['list_id', list_id],
            ['name', item_name],
@@ -166,11 +197,12 @@ def add_task(self,item_name,list_id):
     if insert_result['rsp']['stat'] == 'fail':
         return None, None, insert_result['rsp']['err']['msg'], insert_result['rsp']['err']['code']
 
-    return insert_result['rsp']['list']['taskseries']['id'], insert_result['rsp']['list']['taskseries']['task']['id'], None, None
+    return insert_result['rsp']['list']['taskseries']['id'], \
+           insert_result['rsp']['list']['taskseries']['task']['id'], None, None
 
 
-def delete_task(self, task_id, taskseries_id, list_id):
-    r = RtmRest(_get_full_timeline_param(self), RtmParam.secret)
+def delete_task(task_id, taskseries_id, list_id):
+    r = RtmRest(_get_full_timeline_param(), RtmParam.secret)
     r.add([['method', 'rtm.tasks.delete'],
            ['task_id', task_id],
            ['taskseries_id', taskseries_id],
@@ -183,10 +215,10 @@ def delete_task(self, task_id, taskseries_id, list_id):
     return delete_result['rsp']['transaction']['id'], None, None
 
 
-def list_task(self, filter, list_id):
+def list_task(list_filter, list_id):
     # This call may return a huge amount of data, be sure to use filter!
-    r = RtmRest(_get_full_timeline_param(self), RtmParam.secret)
-    r.add([['method', 'rtm.tasks.getList'], ['filter' , filter]])
+    r = RtmRest(_get_full_timeline_param(), RtmParam.secret)
+    r.add([['method', 'rtm.tasks.getList'], ['filter', list_filter]])
     if list_id:
         r.add([['list_id', list_id]])
     list_result = r.call()
@@ -194,11 +226,11 @@ def list_task(self, filter, list_id):
     if list_result['rsp']['stat'] == 'fail':
         return None, list_result['rsp']['err']['msg'], list_result['rsp']['err']['code']
 
-    return list_result['rsp']['tasks']['list'], None, None
+    return list_result['rsp']['tasks'], None, None
 
 
-def roll_back(self, transaction_id):
-    r = RtmRest(_get_full_timeline_param(self), RtmParam.secret)
+def roll_back(transaction_id):
+    r = RtmRest(_get_full_timeline_param(), RtmParam.secret)
     r.add([['method', 'rtm.transactions.undo'],
            ['transaction_id', transaction_id]])
     roll_back_result = r.call()
@@ -208,8 +240,9 @@ def roll_back(self, transaction_id):
 
     return None, None
 
-def complete_task(self, task_id, taskseries_id, list_id):
-    r = RtmRest(_get_full_timeline_param(self), RtmParam.secret)
+
+def complete_task(task_id, taskseries_id, list_id):
+    r = RtmRest(_get_full_timeline_param(), RtmParam.secret)
     r.add([['method', 'rtm.tasks.complete'],
            ['task_id', task_id],
            ['taskseries_id', taskseries_id],
