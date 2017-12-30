@@ -1,1 +1,1 @@
-(get a token for remember the milk)
+get a token for (?P<appName>.+)$
