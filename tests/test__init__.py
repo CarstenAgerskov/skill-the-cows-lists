@@ -2,11 +2,10 @@ import ConfigParser
 import json
 import unittest
 import uuid
-
+import cow_rest
 from mock import patch, ANY
 from mycroft.messagebus.message import Message
-
-from __init__ import CowsLists, RtmParam
+from __init__ import CowsLists
 
 UNDO_CONTEXT = "UndoContext"
 CONFIRM_CONTEXT = "ConfirmContext"
@@ -24,21 +23,21 @@ class TestOperationInit(unittest.TestCase):
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
         config.read(CONFIG_FILE)
-        RtmParam().reset_param()
-        RtmParam.api_key = config.get('auth', 'api_key')
-        RtmParam.secret = config.get('auth', 'secret')
+        cow_rest.api_key = config.get('auth', 'api_key')
+        cow_rest.secret = config.get('auth', 'secret')
 
     def test_missing_token(self):
-        with patch('__init__.get_token'), \
+        with patch('__init__.cow_rest.get_token'), \
                 patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog:
             message = Message(self)
             message.data.setdefault(TASK_PARAMETER, "task")
             message.data.setdefault(LIST_PARAMETER, "inbox")
 
+            cow_rest.auth_token = None
             self.assertFalse(self.cowsLists.operation_init())
             mock_speak_dialog.assert_called_with('NotAuthenticated')
 
-            RtmParam.frob = "0"
+            cow_rest.frob = "0"
             self.assertFalse(self.cowsLists.operation_init())
             mock_speak_dialog.assert_called_with('InAuthentication')
 
@@ -49,14 +48,13 @@ class TestAuthenticateIntent(unittest.TestCase):  # assuming a valid token in te
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
         config.read(CONFIG_FILE)
-        RtmParam().reset_param()
-        RtmParam.api_key = config.get('auth', 'api_key')
-        RtmParam.secret = config.get('auth', 'secret')
+        cow_rest.api_key = config.get('auth', 'api_key')
+        cow_rest.secret = config.get('auth', 'secret')
 
     def test_token_valid(self):
         with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, \
                 patch('__init__.CowsLists.remove_context') as mock_remove_context:
-            RtmParam.auth_token = None  # Get token from config
+            cow_rest.auth_token = None  # Get token from config
             self.assertFalse(self.cowsLists.authenticate_intent())
             mock_speak_dialog.assert_called_with('TokenValid')
             mock_remove_context.assert_called_with(UNDO_CONTEXT)
@@ -64,9 +62,9 @@ class TestAuthenticateIntent(unittest.TestCase):  # assuming a valid token in te
     def test_token_none(self):
         with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, \
                 patch('__init__.CowsLists.remove_context') as mock_remove_context, \
-                patch('__init__.get_token'), \
+                patch('__init__.cow_rest.get_token'), \
                 patch('__init__.CowsLists.send_email') as mock_send_email:
-            RtmParam.auth_token = None
+            cow_rest.auth_token = None
             self.assertFalse(self.cowsLists.authenticate_intent())
             mock_speak_dialog.assert_called_with('EmailSent')
             mock_send_email.assert_called_with('Authentication', ANY)
@@ -75,9 +73,9 @@ class TestAuthenticateIntent(unittest.TestCase):  # assuming a valid token in te
     def test_token_invalid(self):
         with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, \
                 patch('__init__.CowsLists.remove_context') as mock_remove_context, \
-                patch('__init__.get_token'), \
+                patch('__init__.cow_rest.get_token'), \
                 patch('__init__.CowsLists.send_email') as mock_send_email:
-            RtmParam.auth_token = "0"
+            cow_rest.auth_token = "0"
             self.assertFalse(self.cowsLists.authenticate_intent())
             mock_speak_dialog.assert_called_with('EmailSent')
             mock_send_email.assert_called_with('Authentication', ANY)
@@ -90,14 +88,13 @@ class TestGetTokenIntent(unittest.TestCase):
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
         config.read(CONFIG_FILE)
-        RtmParam().reset_param()
-        RtmParam.api_key = config.get('auth', 'api_key')
-        RtmParam.secret = config.get('auth', 'secret')
+        cow_rest.api_key = config.get('auth', 'api_key')
+        cow_rest.secret = config.get('auth', 'secret')
 
     def test_valid_token(self):
         with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, \
                 patch('__init__.CowsLists.remove_context') as mock_remove_context:
-            RtmParam.auth_token = None  # Get token from config
+            cow_rest.auth_token = None  # Get token from config
             self.cowsLists.get_token_intent()
             mock_speak_dialog.assert_called_with('TokenValid')
             mock_remove_context.assert_called_with(UNDO_CONTEXT)
@@ -105,9 +102,9 @@ class TestGetTokenIntent(unittest.TestCase):
     def test_token_none_frob_none(self):
         with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, \
                 patch('__init__.CowsLists.remove_context') as mock_remove_context, \
-                patch('__init__.get_token'):
-            RtmParam.auth_token = None
-            RtmParam.frob = None
+                patch('__init__.cow_rest.get_token'):
+            cow_rest.auth_token = None
+            cow_rest.frob = None
             self.cowsLists.get_token_intent()
             mock_speak_dialog.assert_called_with('AuthenticateBeforeToken')
             mock_remove_context.assert_called_with(UNDO_CONTEXT)
@@ -115,9 +112,9 @@ class TestGetTokenIntent(unittest.TestCase):
     def test_token_invalid_frob_none(self):
         with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, \
                 patch('__init__.CowsLists.remove_context') as mock_remove_context, \
-                patch('__init__.get_token'):
-            RtmParam.auth_token = "0"
-            RtmParam.frob = None
+                patch('__init__.cow_rest.get_token'):
+            cow_rest.auth_token = "0"
+            cow_rest.frob = None
             self.cowsLists.get_token_intent()
             mock_speak_dialog.assert_called_with('AuthenticateBeforeToken')
             mock_remove_context.assert_called_with(UNDO_CONTEXT)
@@ -125,25 +122,24 @@ class TestGetTokenIntent(unittest.TestCase):
     def test_token_none_frob_fake(self):
         with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, \
                 patch('__init__.CowsLists.remove_context') as mock_remove_context, \
-                patch('__init__.get_token'), \
-                patch('__init__.get_new_token') as mock_get_new_token:
-            RtmParam.auth_token = None
-            RtmParam.frob = "0"
+                patch('__init__.cow_rest.get_token'), \
+                patch('__init__.cow_rest.get_new_token') as mock_get_new_token:
+            cow_rest.auth_token = None
+            cow_rest.frob = "0"
             mock_get_new_token.return_value = None, None
             self.cowsLists.get_token_intent()
             mock_speak_dialog.assert_called_with("GotToken")
             mock_remove_context.assert_called_with(UNDO_CONTEXT)
 
 
-# @unittest.skip("Skip TestAddTaskToList")
+#@unittest.skip("Skip TestAddTaskToList")
 class TestAddTaskToList(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
         config.read(CONFIG_FILE)
-        RtmParam().reset_param()
-        RtmParam.api_key = config.get('auth', 'api_key')
-        RtmParam.secret = config.get('auth', 'secret')
+        cow_rest.api_key = config.get('auth', 'api_key')
+        cow_rest.secret = config.get('auth', 'secret')
         cls.task_name = "Cows Lists test item: " + str(uuid.uuid1())
         print "Using task :" + cls.task_name
 
@@ -154,9 +150,10 @@ class TestAddTaskToList(unittest.TestCase):
             message = Message(self)
             message.data.setdefault(TASK_PARAMETER, self.task_name)
             message.data.setdefault(LIST_PARAMETER, "inbox")
-            RtmParam.auth_token = None  # get token from config
+            cow_rest.auth_token = None  # get token from config
             self.cowsLists.add_task_to_list_intent(message)
-            mock_remove_context.assert_called_with(UNDO_CONTEXT)
+            mock_remove_context.assert_any_call(CONFIRM_CONTEXT)
+            mock_remove_context.assert_any_call(UNDO_CONTEXT)
             mock_set_context.assert_called_with(UNDO_CONTEXT, ANY)
             mock_speak_dialog.assert_called_with("AddTaskToList", ANY)
             c = json.loads(mock_set_context.call_args_list[0][0][1])
@@ -178,7 +175,8 @@ class TestAddTaskToList(unittest.TestCase):
             message.data.setdefault(TASK_PARAMETER, self.task_name)
             message.data.setdefault(LIST_PARAMETER, "test")
             self.cowsLists.add_task_to_list_intent(message)
-            mock_remove_context.assert_called_with(UNDO_CONTEXT)
+            mock_remove_context.assert_any_call(CONFIRM_CONTEXT)
+            mock_remove_context.assert_any_call(UNDO_CONTEXT)
             mock_set_context.assert_called_with(UNDO_CONTEXT, ANY)
             mock_speak_dialog.assert_called_with("AddTaskToList", ANY)
             c = json.loads(mock_set_context.call_args_list[0][0][1])
@@ -198,9 +196,10 @@ class TestAddTaskToList(unittest.TestCase):
             message.data.setdefault(TASK_PARAMETER, self.task_name)
             message.data.setdefault(LIST_PARAMETER, "binbox")
             self.cowsLists.add_task_to_list_intent(message)
-            mock_remove_context.assert_called_with(UNDO_CONTEXT)
+            mock_remove_context.assert_any_call(CONFIRM_CONTEXT)
+            mock_remove_context.assert_any_call(UNDO_CONTEXT)
             mock_set_context.assert_called_with("ConfirmContext", ANY)
-            mock_speak_dialog.assert_called_with("AddTaskToListMismatch", ANY, expect_response=True)
+            mock_speak_dialog.assert_called_with("AddTaskToListMismatch", ANY)
             c = json.loads(mock_set_context.call_args_list[0][0][1])
             self.assertEqual(str(c['dialog']), "AddTaskToList")
 

@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import json
 import sys
-
 import os
 from adapt.intent import IntentBuilder
 from fuzzywuzzy import process
@@ -29,7 +29,7 @@ from os.path import dirname
 
 HOME_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(HOME_DIR)
-from cow_rest import *
+import cow_rest
 
 __author__ = 'cagerskov'
 
@@ -49,7 +49,6 @@ LOGGER = getLogger(__name__)
 class CowsLists(MycroftSkill):
     def __init__(self):
         super(CowsLists, self).__init__(name="TheCowsLists")
-        RtmParam().reset_param()
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
@@ -57,18 +56,18 @@ class CowsLists(MycroftSkill):
     def get_config(self):
         try:
             try:
-                if not RtmParam.api_key:
-                    RtmParam.api_key = self.config.get('api_key')
+                if not cow_rest.api_key:
+                    cow_rest.api_key = self.config.get('api_key')
             except AttributeError:
-                RtmParam.api_key = self.settings.get('api_key')
+                cow_rest.api_key = self.settings.get('api_key')
 
             try:
-                if not RtmParam.secret:
-                    RtmParam.secret = self.config.get('secret')
+                if not cow_rest.secret:
+                    cow_rest.secret = self.config.get('secret')
             except AttributeError:
-                RtmParam.secret = self.settings.get('secret')
+                cow_rest.secret = self.settings.get('secret')
 
-            if not RtmParam.api_key or not RtmParam.secret:
+            if not cow_rest.api_key or not cow_rest.secret:
                 raise Exception("api key or secret not configured")
 
             return True
@@ -81,20 +80,20 @@ class CowsLists(MycroftSkill):
         if not self.get_config():
             return False
 
-        get_token()
+        cow_rest.get_token(cow_rest)
 
-        if not RtmParam.auth_token and RtmParam.frob:
+        if not cow_rest.auth_token and cow_rest.frob:
             self.speak_dialog("InAuthentication")
             return False
 
-        if not RtmParam.auth_token:
+        if not cow_rest.auth_token:
             self.speak_dialog("NotAuthenticated")
             return False
 
         return True
 
     def add_task_to_list(self, task_name, list_name, list_id):
-        taskseries_id, task_id, error_text, error_code = add_task(task_name, list_id)
+        taskseries_id, task_id, error_text, error_code = cow_rest.add_task(task_name, list_id)
         if error_text:
             self.speak_dialog('RestResponseError',
                               {ERROR_TEXT_PARAMETER: error_text,
@@ -117,27 +116,28 @@ class CowsLists(MycroftSkill):
 
     @intent_handler(IntentBuilder("AuthenticateIntent").require("AuthenticateKeyword").build())
     @removes_context(UNDO_CONTEXT)
-    def authenticate_intent(self, message):
+    @removes_context(CONFIRM_CONTEXT)
+    def authenticate_intent(self):
         try:
             if not self.get_config():
                 return
 
-            get_token()
+            cow_rest.get_token(cow_rest)
 
-            if RtmParam.auth_token:
-                error_text, error_code = verify_token_validity()
+            if cow_rest.auth_token:
+                error_text, error_code = cow_rest.verify_token_validity()
                 if not error_text:
                     self.speak_dialog("TokenValid")
                     return
 
-            error_text, error_code = get_frob()
+            error_text, error_code = cow_rest.get_frob(cow_rest)
             if error_text:
                 self.speak_dialog('RestResponseError',
                                   {ERROR_TEXT_PARAMETER: error_text,
                                    ERROR_CODE_PARAMETER: error_code})
                 return
 
-            auth_url = get_auth_url()
+            auth_url = cow_rest.get_auth_url()
 
             mail_body = "Use the link below to authenticate Mycroft with remember the milk.<br>" \
                         + "After authentication, say: Hey Mycroft, get a token for remember the milk<br><br>" \
@@ -154,15 +154,16 @@ class CowsLists(MycroftSkill):
 
     @intent_handler(IntentBuilder("GetTokenIntent").require("GetTokenKeyword").build())
     @removes_context(UNDO_CONTEXT)
+    @removes_context(CONFIRM_CONTEXT)
     def get_token_intent(self):
         try:
             if not self.get_config():
                 return
 
-            get_token()
+            cow_rest.get_token(cow_rest)
 
-            if RtmParam.auth_token:
-                error_text, error_code = verify_token_validity()
+            if cow_rest.auth_token:
+                error_text, error_code = cow_rest.verify_token_validity()
                 if error_text and error_code != '98':
                     self.speak_dialog('RestResponseError',
                                       {ERROR_TEXT_PARAMETER: error_text,
@@ -173,11 +174,11 @@ class CowsLists(MycroftSkill):
                     self.speak_dialog("TokenValid")
                     return
 
-            if not RtmParam.frob:
+            if not cow_rest.frob:
                 self.speak_dialog('AuthenticateBeforeToken')
                 return
 
-            error_text, error_code = get_new_token()
+            error_text, error_code = cow_rest.get_new_token(cow_rest)
             if error_text:
                 self.speak_dialog('RestResponseError',
                                   {ERROR_TEXT_PARAMETER: error_text,
@@ -197,20 +198,21 @@ class CowsLists(MycroftSkill):
     def add_task_to_list_intent(self, message):
         try:
             self.remove_context(UNDO_CONTEXT)
+            self.remove_context(CONFIRM_CONTEXT)
             task_name = message.data.get(TASK_PARAMETER)
             list_name = message.data.get(LIST_PARAMETER)
 
             if not self.operation_init():
                 return
 
-            error_text, error_code = get_timeline()
+            error_text, error_code = cow_rest.get_timeline(cow_rest)
             if error_text:
                 self.speak_dialog('RestResponseError',
                                   {ERROR_TEXT_PARAMETER: error_text,
                                    ERROR_CODE_PARAMETER: error_code})
                 return
 
-            list_result, error_text, error_code = get_list()
+            list_result, error_text, error_code = cow_rest.get_list()
             if error_text:
                 self.speak_dialog('RestResponseError',
                                   {ERROR_TEXT_PARAMETER: error_text,
@@ -257,9 +259,9 @@ class CowsLists(MycroftSkill):
         try:
             c = json.loads(message.data.get(UNDO_CONTEXT))
             if str(c['dialog']) == "AddTaskToListUndo":
-                transaction_id, error_text, error_code = delete_task(c['task']['task_id'],
-                                                                     c['task']["taskseries_id"],
-                                                                     c['task']["list_id"])
+                transaction_id, error_text, error_code = cow_rest.delete_task(c['task']['task_id'],
+                                                                              c['task']["taskseries_id"],
+                                                                              c['task']["list_id"])
 
                 if error_text:
                     self.speak_dialog('RestResponseError',
@@ -291,7 +293,7 @@ class CowsLists(MycroftSkill):
 
     @intent_handler(IntentBuilder("NoConfirmIntent").require("NoKeyword").require("ConfirmContext").build())
     @removes_context(CONFIRM_CONTEXT)
-    def no_confirm_intent(self, message):
+    def no_confirm_intent(self):
         self.speak_dialog('NoConfirm')
         pass
 
