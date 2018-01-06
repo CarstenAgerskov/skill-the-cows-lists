@@ -34,7 +34,7 @@ You can undo the last operation, within 2 minutes, for example:
 * You: "Hey Mycroft, undo"
 * Mycroft: "I have removed task from list inbox again"
 
-#### Undo
+#### Read list
 Read the tasks on a list:
 * You: "Hey Mycroft, read list inbox"
 * Mycroft: "List inbox has 2 tasks on it, call home, go fishing"
