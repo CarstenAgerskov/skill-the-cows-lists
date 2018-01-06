@@ -34,6 +34,11 @@ You can undo the last operation, within 2 minutes, for example:
 * You: "Hey Mycroft, undo"
 * Mycroft: "I have removed task from list inbox again"
 
+#### Undo
+Read the tasks on a list:
+* You: "Hey Mycroft, read list inbox"
+* Mycroft: "List inbox has 2 tasks on it, call home, go fishing"
+
 ## Configuration
 To access your Remember The Milk account via the rest API, it is neccesary to apply for an API key at
 [https://www.rememberthemilk.com/services/api/](https://www.rememberthemilk.com/services/api/). Click on the "Apply for an API key" button, and fill in the information. You will get a mail from remember the milk containing:

@@ -216,3 +216,43 @@ class TestAddTaskToList(unittest.TestCase):
             self.cowsLists.undo_intent(message)
             mock_remove_context.assert_called_with(UNDO_CONTEXT)
             mock_speak_dialog.assert_called_with("AddTaskToListUndo", ANY)
+
+#@unittest.skip("Skip TestReadList")
+class TestReadList(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.cowsLists = CowsLists()
+        config.read(CONFIG_FILE)
+        cow_rest.api_key = config.get('auth', 'api_key')
+        cow_rest.secret = config.get('auth', 'secret')
+        cls.task_name = "Cows Lists test item: " + str(uuid.uuid1())
+        print "Using task :" + cls.task_name
+
+    def test_list_match(self):
+        with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, \
+                patch('__init__.CowsLists.remove_context') as mock_remove_context, \
+                patch('__init__.CowsLists.set_context') as mock_set_context, \
+                patch('__init__.CowsLists.speak') as mock_speak:
+            message = Message(self)
+            message.data.setdefault(TASK_PARAMETER, self.task_name)
+            message.data.setdefault(LIST_PARAMETER, "inbox")
+            cow_rest.auth_token = None  # get token from config
+            self.cowsLists.add_task_to_list_intent(message)
+
+            timeline = cow_rest.timeline
+            cow_rest.timeline = None
+            self.cowsLists.read_list_intent(message)
+            #mock_speak_dialog.assert_any_call("ReadList", ANY)
+            mock_speak.assert_any_call(self.task_name)
+
+            # Remove task again
+            cow_rest.timeline = timeline
+            message = Message(self)
+            message.data.setdefault(UNDO_CONTEXT, mock_set_context.call_args_list[0][0][1])
+            self.cowsLists.undo_intent(message)
+            mock_remove_context.assert_called_with(UNDO_CONTEXT)
+            mock_speak_dialog.assert_called_with("AddTaskToListUndo", ANY)
+
+
+if __name__ == '__main__':
+    unittest.main()

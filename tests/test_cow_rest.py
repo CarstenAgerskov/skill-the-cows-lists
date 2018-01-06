@@ -113,6 +113,10 @@ class TestOperations(unittest.TestCase):
 
         self.assertNotEqual(task_match, None)  # assuming RTM make unique tasks
 
+        # check simplify list
+        simple_task_list = cow_rest.simple_task_list(task_list)
+        self.assertTrue(task_name in simple_task_list)
+
         # mark task as complete
         transaction_id, error_text, error_code = cow_rest.complete_task(task_id, taskseries_id, list_id)
         self.assertEqual(error_text, None)

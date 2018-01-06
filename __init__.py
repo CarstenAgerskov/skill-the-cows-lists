@@ -40,6 +40,7 @@ ERROR_TEXT_PARAMETER = "errorText"
 ERROR_CODE_PARAMETER = "errorCode"
 FUNCTION_NAME_PARAMETER = "functionName"
 LINE_PARAMETER = "lineNumber"
+NOF_TASK_PARAMETER = "nofTask"
 UNDO_CONTEXT = "UndoContext"
 CONFIRM_CONTEXT = "ConfirmContext"
 
@@ -49,6 +50,7 @@ LOGGER = getLogger(__name__)
 class CowsLists(MycroftSkill):
     def __init__(self):
         super(CowsLists, self).__init__(name="TheCowsLists")
+        self.stopSpeaking = False
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
@@ -113,6 +115,27 @@ class CowsLists(MycroftSkill):
         self.set_context(UNDO_CONTEXT, json.dumps(c))
 
         return True
+
+    def find_list(self, list_name):
+        list_result, error_text, error_code = cow_rest.get_list()
+
+        if error_text:
+            return None, None, None, error_text, error_code
+
+        # Workaround the intent parser remove the word list: First, try to match to a "list_name list"
+        list_name_best_match, significance = process.extractOne(list_name + " list",
+                                                                map(lambda x: str(x['name']).lower(),
+                                                                    list_result))
+
+        # Then try to match to "list_name"
+        if significance < 100:
+            list_name_best_match, significance = process.extractOne(list_name,
+                                                                    map(lambda x: str(x['name']).lower(),
+                                                                        list_result))
+
+        list_id = filter(lambda x: str(x['name']).lower() == list_name_best_match, list_result)[0]['id']
+
+        return list_name_best_match, list_id, significance, error_text, error_code
 
     @intent_handler(IntentBuilder("AuthenticateIntent").require("AuthenticateKeyword").build())
     @removes_context(UNDO_CONTEXT)
@@ -212,25 +235,12 @@ class CowsLists(MycroftSkill):
                                    ERROR_CODE_PARAMETER: error_code})
                 return
 
-            list_result, error_text, error_code = cow_rest.get_list()
+            list_name_best_match, list_id, significance, error_text, error_code = self.find_list(list_name)
             if error_text:
                 self.speak_dialog('RestResponseError',
                                   {ERROR_TEXT_PARAMETER: error_text,
                                    ERROR_CODE_PARAMETER: error_code})
                 return
-
-            # Workaround the intent parser remove the word list: First, try to match to a "list_name list"
-            list_name_best_match, significance = process.extractOne(list_name + " list",
-                                                                    map(lambda x: str(x['name']).lower(),
-                                                                        list_result))
-
-            # Then try to match to "list_name"
-            if significance < 100:
-                list_name_best_match, significance = process.extractOne(list_name,
-                                                                        map(lambda x: str(x['name']).lower(),
-                                                                            list_result))
-
-            list_id = filter(lambda x: str(x['name']).lower() == list_name_best_match, list_result)[0]['id']
 
             if significance < 100:
                 c = {"dialog": "AddTaskToList",
@@ -251,6 +261,43 @@ class CowsLists(MycroftSkill):
             self.speak_dialog('GeneralError',
                               {FUNCTION_NAME_PARAMETER: "add task to list intent",
                                LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
+
+    @intent_handler(IntentBuilder("ReadListIntent").require("ReadListKeyword").require(LIST_PARAMETER).build())
+    def read_list_intent(self, message):
+        try:
+            list_name = message.data.get(LIST_PARAMETER)
+
+            if not self.operation_init():
+                return
+
+            list_name_best_match, list_id, significance, error_text, error_code = self.find_list(list_name)
+            if error_text:
+                self.speak_dialog('RestResponseError',
+                                  {ERROR_TEXT_PARAMETER: error_text,
+                                   ERROR_CODE_PARAMETER: error_code})
+                return
+
+            task_list, error_code, error_text = cow_rest.list_task("status:incomplete", list_id)
+            if error_text:
+                self.speak_dialog('RestResponseError',
+                                  {ERROR_TEXT_PARAMETER: error_text,
+                                   ERROR_CODE_PARAMETER: error_code})
+                return
+
+            simple_task_list = cow_rest.simple_task_list(task_list)
+
+            self.speak_dialog("ReadListOneItem" if len(simple_task_list) == 1 else "ReadList",
+                              {LIST_PARAMETER: list_name_best_match,
+                               NOF_TASK_PARAMETER: str(len(simple_task_list)) })
+
+            map(lambda x: self.speak(x), simple_task_list)
+
+        except Exception as e:
+            LOGGER.exception("Error in read_list_intent: {0}".format(e))
+            self.speak_dialog('GeneralError',
+                              {FUNCTION_NAME_PARAMETER: "read list intent",
+                               LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
+
 
     # RTM can roll back some operations, other has to be compensated. The undo itent hides this complexity
     @intent_handler(IntentBuilder("UndoIntent").require("UndoKeyword").require(UNDO_CONTEXT).build())
@@ -295,11 +342,12 @@ class CowsLists(MycroftSkill):
     @removes_context(CONFIRM_CONTEXT)
     def no_confirm_intent(self):
         self.speak_dialog('NoConfirm')
-        pass
 
     def stop(self):
-        pass
-
+        if self.process and self.process.poll() is None:
+            self.process.terminate()
+            self.process.wait()
+            self.speak_dialog('Stop')
 
 def create_skill():
     return CowsLists()

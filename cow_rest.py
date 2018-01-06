@@ -97,6 +97,20 @@ def find_task_id(task_list, taskseries_id, task_id):
     return task_match
 
 
+def simple_task_list(task_list):
+    simple_task = []
+    if 'list' not in task_list:
+        return simple_task
+
+    for taskseries in task_list['list']:
+        if not isinstance(taskseries['taskseries'], list):
+            simple_task.append(taskseries['taskseries']['name'])
+        else:
+            map(lambda x: simple_task.append(x['name']), taskseries['taskseries'])
+
+    return simple_task
+
+
 def get_token(self):
     if not self.auth_token:
         config.read(CONFIG_FILE)
@@ -189,8 +203,17 @@ def add_task(item_name, list_id):
     if insert_result['rsp']['stat'] == 'fail':
         return None, None, insert_result['rsp']['err']['msg'], insert_result['rsp']['err']['code']
 
-    return insert_result['rsp']['list']['taskseries']['id'], \
-           insert_result['rsp']['list']['taskseries']['task']['id'], None, None
+    if isinstance(insert_result['rsp']['list']['taskseries'], list):
+        taskseries = insert_result['rsp']['list']['taskseries'][0]
+    else:
+        taskseries = insert_result['rsp']['list']['taskseries']
+
+    if isinstance(taskseries['task'], list):
+        task = taskseries['task'][0]
+    else:
+        task = taskseries['task']
+
+    return taskseries['id'], task['id'], None, None
 
 
 def delete_task(task_id, taskseries_id, list_id):
@@ -209,7 +232,7 @@ def delete_task(task_id, taskseries_id, list_id):
 
 def list_task(list_filter, list_id):
     # This call may return a huge amount of data, be sure to use filter!
-    r = RtmRest(_get_full_timeline_param())
+    r = RtmRest(_get_full_param())
     r.add([['method', 'rtm.tasks.getList'], ['filter', list_filter]])
     if list_id:
         r.add([['list_id', list_id]])
