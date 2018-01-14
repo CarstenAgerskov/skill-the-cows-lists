@@ -1,0 +1,3 @@
+(find) (?P<taskName>.+) (on my) (?P<listName>.+) (list)
+^find (?P<taskName>.+) on list (?P<listName>.+)$
+

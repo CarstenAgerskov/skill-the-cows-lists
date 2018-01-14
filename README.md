@@ -39,6 +39,19 @@ Read the tasks on a list:
 * You: "Hey Mycroft, read list inbox"
 * Mycroft: "List inbox has 2 tasks on it, call home, go fishing"
 
+The skill will try to find the best match among your lists, if you refer to a list that foes not exist.
+
+#### Is item on list
+Find an item on a list:
+* You: "Hey Mycroft, find milk on my grocery list"
+* Mycroft: "I found milk on list grocery"
+
+The skill will try to match both list and task, like this:
+* You: "Hey Mycroft, find blink on my grocery store list"
+* Mycroft: "I cant find a list called grocery store, I am using the list grocery instead"
+* Mycroft: "I did not find blink, but I did find milk on list grocery"
+
+
 ## Configuration
 To access your Remember The Milk account via the rest API, it is neccesary to apply for an API key at
 [https://www.rememberthemilk.com/services/api/](https://www.rememberthemilk.com/services/api/). Click on the "Apply for an API key" button, and fill in the information. You will get a mail from remember the milk containing:

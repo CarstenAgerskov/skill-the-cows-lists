@@ -277,6 +277,10 @@ class CowsLists(MycroftSkill):
                                    ERROR_CODE_PARAMETER: error_code})
                 return
 
+            if significance < 100:
+                self.speak_dialog("UsingAnotherList", {LIST_PARAMETER: list_name,
+                                                       BEST_MATCH_PARAMETER: list_name_best_match})
+
             task_list, error_code, error_text = cow_rest.list_task("status:incomplete", list_id)
             if error_text:
                 self.speak_dialog('RestResponseError',
@@ -286,9 +290,14 @@ class CowsLists(MycroftSkill):
 
             simple_task_list = cow_rest.simple_task_list(task_list)
 
+            if len(simple_task_list) == 0:
+                self.speak_dialog("NoTaskOnList",
+                                  {LIST_PARAMETER: list_name_best_match})
+                return
+
             self.speak_dialog("ReadListOneItem" if len(simple_task_list) == 1 else "ReadList",
                               {LIST_PARAMETER: list_name_best_match,
-                               NOF_TASK_PARAMETER: str(len(simple_task_list)) })
+                               NOF_TASK_PARAMETER: str(len(simple_task_list))})
 
             map(lambda x: self.speak(x), simple_task_list)
 
@@ -298,6 +307,59 @@ class CowsLists(MycroftSkill):
                               {FUNCTION_NAME_PARAMETER: "read list intent",
                                LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
 
+    @intent_handler(IntentBuilder("FindTaskOnListIntent").require("FindTaskOnListKeyword").require(TASK_PARAMETER).
+                    require(LIST_PARAMETER).build())
+    def find_task_on_list_intent(self, message):
+        try:
+            task_name = message.data.get(TASK_PARAMETER)
+            list_name = message.data.get(LIST_PARAMETER)
+
+            if not self.operation_init():
+                return
+
+            list_name_best_match, list_id, significance, error_text, error_code = self.find_list(list_name)
+            if error_text:
+                self.speak_dialog('RestResponseError',
+                                  {ERROR_TEXT_PARAMETER: error_text,
+                                   ERROR_CODE_PARAMETER: error_code})
+                return
+
+            if significance < 100:
+                self.speak_dialog("UsingAnotherList",
+                                  {LIST_PARAMETER: list_name, BEST_MATCH_PARAMETER: list_name_best_match})
+
+            task_list, error_code, error_text = cow_rest.list_task("status:incomplete", list_id)
+            if error_text:
+                self.speak_dialog('RestResponseError',
+                                  {ERROR_TEXT_PARAMETER: error_text,
+                                   ERROR_CODE_PARAMETER: error_code})
+                return
+
+            simple_task_list = cow_rest.simple_task_list(task_list)
+
+            if len(simple_task_list) == 0:
+                self.speak_dialog("NoTaskOnList",
+                                  {LIST_PARAMETER: list_name_best_match})
+                return
+
+            task_name_best_match, significance = process.extractOne(task_name,
+                                                                    map(lambda x: str(x).lower(), simple_task_list))
+
+            if significance < 100:
+                self.speak_dialog("FindTaskOnListMismatch",
+                                  {TASK_PARAMETER: task_name,
+                                   BEST_MATCH_PARAMETER: task_name_best_match,
+                                   LIST_PARAMETER: list_name_best_match})
+                return
+
+            self.speak_dialog("FindTaskOnList",
+                              {TASK_PARAMETER: task_name_best_match, LIST_PARAMETER: list_name_best_match})
+
+        except Exception as e:
+            LOGGER.exception("Error in find_task_intent: {0}".format(e))
+            self.speak_dialog('GeneralError',
+                              {FUNCTION_NAME_PARAMETER: "find task intent",
+                               LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
 
     # RTM can roll back some operations, other has to be compensated. The undo itent hides this complexity
     @intent_handler(IntentBuilder("UndoIntent").require("UndoKeyword").require(UNDO_CONTEXT).build())
@@ -343,11 +405,6 @@ class CowsLists(MycroftSkill):
     def no_confirm_intent(self):
         self.speak_dialog('NoConfirm')
 
-    def stop(self):
-        if self.process and self.process.poll() is None:
-            self.process.terminate()
-            self.process.wait()
-            self.speak_dialog('Stop')
 
 def create_skill():
     return CowsLists()
