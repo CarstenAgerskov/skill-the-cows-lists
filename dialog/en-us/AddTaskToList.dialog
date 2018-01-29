@@ -1,1 +1,1 @@
-Item {{taskName}} was added to list {{listName}}
+{{taskName}} was added to list {{listName}}

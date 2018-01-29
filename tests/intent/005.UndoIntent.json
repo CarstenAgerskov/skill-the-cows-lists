@@ -1,0 +1,7 @@
+{
+  "utterance": "undo",
+  "intent_type": "UndoIntent",
+  "intent": {
+    "UndoKeyword": "Undo"
+  }
+}

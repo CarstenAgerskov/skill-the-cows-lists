@@ -116,6 +116,7 @@ class CowsLists(MycroftSkill):
 
         return True
 
+
     def find_list(self, list_name):
         list_result, error_text, error_code = cow_rest.get_list()
 
@@ -135,7 +136,91 @@ class CowsLists(MycroftSkill):
 
         list_id = filter(lambda x: str(x['name']).lower() == list_name_best_match, list_result)[0]['id']
 
-        return list_name_best_match, list_id, significance, error_text, error_code
+        return list_name_best_match, list_id, significance, None, None
+
+
+    def find_task_on_list(self, task_name, list_name):
+        list_name_best_match, list_id, significance, error_text, error_code = self.find_list(list_name)
+        if error_text:
+            self.speak_dialog('RestResponseError',
+                              {ERROR_TEXT_PARAMETER: error_text,
+                               ERROR_CODE_PARAMETER: error_code})
+            return None, None, None, None
+
+        if significance < 100:
+            self.speak_dialog("UsingAnotherList",
+                              {LIST_PARAMETER: list_name, BEST_MATCH_PARAMETER: list_name_best_match})
+
+        task_list, error_code, error_text = cow_rest.list_task("status:incomplete", list_id)
+        if error_text:
+            self.speak_dialog('RestResponseError',
+                              {ERROR_TEXT_PARAMETER: error_text,
+                               ERROR_CODE_PARAMETER: error_code})
+            return None, None, None, None
+
+        flat_task_list = cow_rest.flat_task_list(task_list)
+
+        if len(flat_task_list) == 0:
+            self.speak_dialog("NoTaskOnList",
+                              {LIST_PARAMETER: list_name_best_match})
+            return None, None, None, None
+
+        task_name_best_match, significance = process.extractOne(task_name,
+                                                                map(lambda x: str(x['task_name']).lower(),
+                                                                    flat_task_list))
+
+        selected_task_list = filter(lambda x: str(x['task_name']).lower() == task_name_best_match, flat_task_list)
+
+        return list_name_best_match, task_name_best_match, list_id, selected_task_list
+
+
+    def complete_task_on_list(self, task_name, list_name):
+        list_name_best_match, task_name_best_match, list_id, selected_task_list = self.find_task_on_list(task_name, list_name)
+        if not list_name_best_match:
+            return False
+
+        if task_name.lower() != task_name_best_match.lower():
+            self.speak_dialog("FindTaskOnListMismatch",
+                              {TASK_PARAMETER: task_name,
+                               BEST_MATCH_PARAMETER: task_name_best_match,
+                               LIST_PARAMETER: list_name_best_match})
+
+        error_text, error_code = cow_rest.get_timeline(cow_rest)
+        if error_text:
+            self.speak_dialog('RestResponseError',
+                              {ERROR_TEXT_PARAMETER: error_text,
+                               ERROR_CODE_PARAMETER: error_code})
+            return False
+
+        c = {"dialog": "CompleteTaskOnListUndo",
+                     "dialogParam": {TASK_PARAMETER: task_name_best_match, LIST_PARAMETER: list_name_best_match},
+             'transaction_id': []}
+
+        for t in selected_task_list:
+            transaction_id, error_text, error_code = cow_rest.complete_task(t['task_id'],
+                                                                            t['taskseries_id'],
+                                                                            list_id)
+            if error_text:
+                self.speak_dialog('RestResponseError',
+                                  {ERROR_TEXT_PARAMETER: error_text,
+                                   ERROR_CODE_PARAMETER: error_code})
+                # RECOVER
+                return False
+
+            c['transaction_id'].append(transaction_id)
+
+        if len(selected_task_list) == 1:
+            self.speak_dialog("CompleteTaskOnList", {TASK_PARAMETER: task_name_best_match,
+                                                     LIST_PARAMETER: list_name_best_match})
+        else:
+            self.speak_dialog("CompleteManyTaskOnList", {NOF_TASK_PARAMETER: str(len(selected_task_list)),
+                                                         TASK_PARAMETER: task_name_best_match,
+                                                         LIST_PARAMETER: list_name_best_match})
+
+        self.set_context(UNDO_CONTEXT, json.dumps(c))
+
+        return True
+
 
     @intent_handler(IntentBuilder("AuthenticateIntent").require("AuthenticateKeyword").build())
     @removes_context(UNDO_CONTEXT)
@@ -262,6 +347,56 @@ class CowsLists(MycroftSkill):
                               {FUNCTION_NAME_PARAMETER: "add task to list intent",
                                LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
 
+
+    @intent_handler(IntentBuilder("FindTaskOnListIntent").require("FindTaskOnListKeyword").require(TASK_PARAMETER).
+                    require(LIST_PARAMETER).build())
+    def find_task_on_list_intent(self, message):
+        try:
+            task_name = message.data.get(TASK_PARAMETER)
+            list_name = message.data.get(LIST_PARAMETER)
+
+            if not self.operation_init():
+                return
+
+            list_name_best_match, task_name_best_match, list_id, selected_task_list = self.find_task_on_list(task_name, list_name)
+
+            if task_name.lower() != task_name_best_match.lower():
+                self.speak_dialog("FindTaskOnListMismatch",
+                                  {TASK_PARAMETER: task_name,
+                                   BEST_MATCH_PARAMETER: task_name_best_match,
+                                   LIST_PARAMETER: list_name_best_match})
+            else:
+                self.speak_dialog("FindTaskOnList",
+                                  {TASK_PARAMETER: task_name_best_match, LIST_PARAMETER: list_name_best_match})
+
+        except Exception as e:
+            LOGGER.exception("Error in find_task_intent: {0}".format(e))
+            self.speak_dialog('GeneralError',
+                              {FUNCTION_NAME_PARAMETER: "find task intent",
+                               LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
+
+
+    @intent_handler(IntentBuilder("CompleteTaskOnListIntent").require("CompleteTaskOnListKeyword").require(TASK_PARAMETER).
+                    require(LIST_PARAMETER).build())
+    def complete_task_on_list_intent(self, message):
+        try:
+            self.remove_context(UNDO_CONTEXT)
+            self.remove_context(CONFIRM_CONTEXT)
+            task_name = message.data.get(TASK_PARAMETER)
+            list_name = message.data.get(LIST_PARAMETER)
+
+            if not self.operation_init():
+                return
+
+            self.complete_task_on_list(task_name,list_name)
+
+        except Exception as e:
+            LOGGER.exception("Error in complete_task_on_list_intent: {0}".format(e))
+            self.speak_dialog('GeneralError',
+                              {FUNCTION_NAME_PARAMETER: "read list intent",
+                               LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
+
+
     @intent_handler(IntentBuilder("ReadListIntent").require("ReadListKeyword").require(LIST_PARAMETER).build())
     def read_list_intent(self, message):
         try:
@@ -288,18 +423,18 @@ class CowsLists(MycroftSkill):
                                    ERROR_CODE_PARAMETER: error_code})
                 return
 
-            simple_task_list = cow_rest.simple_task_list(task_list)
+            flat_task_list = cow_rest.flat_task_list(task_list)
 
-            if len(simple_task_list) == 0:
+            if len(flat_task_list) == 0:
                 self.speak_dialog("NoTaskOnList",
                                   {LIST_PARAMETER: list_name_best_match})
                 return
 
-            self.speak_dialog("ReadListOneItem" if len(simple_task_list) == 1 else "ReadList",
+            self.speak_dialog("ReadListOneItem" if len(flat_task_list) == 1 else "ReadList",
                               {LIST_PARAMETER: list_name_best_match,
-                               NOF_TASK_PARAMETER: str(len(simple_task_list))})
+                               NOF_TASK_PARAMETER: str(len(flat_task_list))})
 
-            map(lambda x: self.speak(x), simple_task_list)
+            map(lambda x: self.speak(x['task_name']), flat_task_list)
 
         except Exception as e:
             LOGGER.exception("Error in read_list_intent: {0}".format(e))
@@ -307,59 +442,6 @@ class CowsLists(MycroftSkill):
                               {FUNCTION_NAME_PARAMETER: "read list intent",
                                LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
 
-    @intent_handler(IntentBuilder("FindTaskOnListIntent").require("FindTaskOnListKeyword").require(TASK_PARAMETER).
-                    require(LIST_PARAMETER).build())
-    def find_task_on_list_intent(self, message):
-        try:
-            task_name = message.data.get(TASK_PARAMETER)
-            list_name = message.data.get(LIST_PARAMETER)
-
-            if not self.operation_init():
-                return
-
-            list_name_best_match, list_id, significance, error_text, error_code = self.find_list(list_name)
-            if error_text:
-                self.speak_dialog('RestResponseError',
-                                  {ERROR_TEXT_PARAMETER: error_text,
-                                   ERROR_CODE_PARAMETER: error_code})
-                return
-
-            if significance < 100:
-                self.speak_dialog("UsingAnotherList",
-                                  {LIST_PARAMETER: list_name, BEST_MATCH_PARAMETER: list_name_best_match})
-
-            task_list, error_code, error_text = cow_rest.list_task("status:incomplete", list_id)
-            if error_text:
-                self.speak_dialog('RestResponseError',
-                                  {ERROR_TEXT_PARAMETER: error_text,
-                                   ERROR_CODE_PARAMETER: error_code})
-                return
-
-            simple_task_list = cow_rest.simple_task_list(task_list)
-
-            if len(simple_task_list) == 0:
-                self.speak_dialog("NoTaskOnList",
-                                  {LIST_PARAMETER: list_name_best_match})
-                return
-
-            task_name_best_match, significance = process.extractOne(task_name,
-                                                                    map(lambda x: str(x).lower(), simple_task_list))
-
-            if significance < 100:
-                self.speak_dialog("FindTaskOnListMismatch",
-                                  {TASK_PARAMETER: task_name,
-                                   BEST_MATCH_PARAMETER: task_name_best_match,
-                                   LIST_PARAMETER: list_name_best_match})
-                return
-
-            self.speak_dialog("FindTaskOnList",
-                              {TASK_PARAMETER: task_name_best_match, LIST_PARAMETER: list_name_best_match})
-
-        except Exception as e:
-            LOGGER.exception("Error in find_task_intent: {0}".format(e))
-            self.speak_dialog('GeneralError',
-                              {FUNCTION_NAME_PARAMETER: "find task intent",
-                               LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
 
     # RTM can roll back some operations, other has to be compensated. The undo itent hides this complexity
     @intent_handler(IntentBuilder("UndoIntent").require("UndoKeyword").require(UNDO_CONTEXT).build())
@@ -378,6 +460,16 @@ class CowsLists(MycroftSkill):
                                        ERROR_CODE_PARAMETER: error_code})
                     return
 
+                self.speak_dialog(c['dialog'], c['dialogParam'])
+
+            if c['dialog'] == "CompleteTaskOnListUndo":
+                for t in c['transaction_id']:
+                    error_text, error_code = cow_rest.roll_back(str(t))
+                    if error_text:
+                        self.speak_dialog('RestResponseError',
+                                          {ERROR_TEXT_PARAMETER: error_text,
+                                           ERROR_CODE_PARAMETER: error_code})
+                        return
                 self.speak_dialog(c['dialog'], c['dialogParam'])
 
         except Exception as e:

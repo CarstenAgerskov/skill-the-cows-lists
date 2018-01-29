@@ -97,18 +97,35 @@ def find_task_id(task_list, taskseries_id, task_id):
     return task_match
 
 
-def simple_task_list(task_list):
-    simple_task = []
+def flat_task_list(task_list):
+    flat_task = []
     if 'list' not in task_list:
-        return simple_task
+        return flat_task
 
     for taskseries in task_list['list']:
-        if not isinstance(taskseries['taskseries'], list):
-            simple_task.append(taskseries['taskseries']['name'])
+        if isinstance(taskseries['taskseries'], list):
+            for t in taskseries['taskseries']:
+                if isinstance(t['task'], list):
+                    map(lambda x: flat_task.append({'task_name': t['name'],
+                                                'taskseries_id': t['id'],
+                                                'task_id': x['id']}), t['task'])
+                else:
+                    flat_task.append({'task_name': t['name'],
+                                      'taskseries_id': t['id'],
+                                      'task_id' : t['task']['id']})
         else:
-            map(lambda x: simple_task.append(x['name']), taskseries['taskseries'])
+            if isinstance(taskseries['taskseries']['task'], list):
+                map(lambda x: flat_task.append({'task_name': taskseries['taskseries']['name'],
+                                                'taskseries_id': taskseries['taskseries']['id'],
+                                                'task_id': x['id']}), taskseries['taskseries']['task'])
+            else:
+                flat_task.append({ 'task_name': taskseries['taskseries']['name'],
+                               'taskseries_id': taskseries['taskseries']['id'],
+                               'task_id': taskseries['taskseries']['task']['id']})
 
-    return simple_task
+
+    return flat_task
+
 
 
 def get_token(self):

@@ -15,13 +15,13 @@ The skill is using Remember The Milk ["smart add"](https://www.rememberthemilk.c
 
 * "Hey Mycroft, add remember to call home tomorrow at 9 to list Inbox"
 
-will add an item called "remember to call home" to the Remember The Milk's Inbox, and set the due date to tomorrow at 9.
+will add a task called "remember to call home" to the Remember The Milk's Inbox, and set the due date to tomorrow at 9.
 
 The skill will try to recognize mispronounced list names, for example:
 * You: "Hey Mycroft, add task to my bin box list"
 * Mycroft: "I can't find a list called bin box, do you want to add the task to inbox instead?
 * You: "Hey Mycroft, yes"
-* Mycroft: "Item task was added to list inbox"
+* Mycroft: "Task was added to list inbox"
 
 You must answer yes or no within 2 minutes, or Mycroft will forget  the context, and will not add the task to the list.
 
@@ -30,10 +30,11 @@ Be careful about using the word 'list' when you name the lists in Remember The M
 #### Undo
 You can undo the last operation, within 2 minutes, for example:
 * You: "Hey Mycroft, add task to list Inbox"
-* Mycroft: "Item task was added to list inbox"
+* Mycroft: "Task was added to list inbox"
 * You: "Hey Mycroft, undo"
 * Mycroft: "I have removed task from list inbox again"
-
+The words undo, revert, roll back, restore can be used
+ 
 #### Read list
 Read the tasks on a list:
 * You: "Hey Mycroft, read list inbox"
@@ -41,8 +42,8 @@ Read the tasks on a list:
 
 The skill will try to find the best match among your lists, if you refer to a list that foes not exist.
 
-#### Is item on list
-Find an item on a list:
+#### Is task on list
+Find a task on a list:
 * You: "Hey Mycroft, find milk on my grocery list"
 * Mycroft: "I found milk on list grocery"
 
@@ -50,6 +51,19 @@ The skill will try to match both list and task, like this:
 * You: "Hey Mycroft, find blink on my grocery store list"
 * Mycroft: "I cant find a list called grocery store, I am using the list grocery instead"
 * Mycroft: "I did not find blink, but I did find milk on list grocery"
+
+#### Complete task
+Find a task on a list:
+* You: "Hey Mycroft, complete call home on my personal list"
+* Mycroft: "Call home on list personal was marked complete"
+* You: "Hey Mycroft, restore"
+* Mycroft: "I have restored call home on list personal again"
+
+The skill will try to match both list and task, like this:
+* You: "Hey Mycroft, complete blink on my grocery store list"
+* Mycroft: "I cant find a list called grocery store, I am using the list grocery instead"
+* Mycroft: "I did not find blink, but I did find milk on list grocery"
+* Mycroft: "Milk on list grocery was marked complete"
 
 
 ## Configuration
@@ -70,7 +84,7 @@ After authentication with remember the milk, and only then, say:
 
 "Hey Mycroft, get a token for remember the milk"
 
-Now, Mycroft is ready to add items to your lists.
+Now, Mycroft is ready to add tasks to your lists.
 
 As an alternative, if you don't want to store your api key and secret at home.mycroft.ai, you can instead add the following
 to mycroft.conf:

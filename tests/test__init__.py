@@ -227,6 +227,7 @@ class TestReadList(unittest.TestCase):
         cow_rest.api_key = config.get('auth', 'api_key')
         cow_rest.secret = config.get('auth', 'secret')
         cls.task_name = "Cows Lists test item: " + str(uuid.uuid1())
+        cls.list_name = 'test list'
         print "Using task :" + cls.task_name
 
     def test_read_list(self):
@@ -234,25 +235,46 @@ class TestReadList(unittest.TestCase):
                 patch('__init__.CowsLists.remove_context') as mock_remove_context, \
                 patch('__init__.CowsLists.set_context') as mock_set_context, \
                 patch('__init__.CowsLists.speak') as mock_speak:
+            cow_rest.auth_token = None  # get token from config
+            cow_rest.timeline = None # First call without timeline
             message = Message(self)
             message.data.setdefault(TASK_PARAMETER, self.task_name)
-            message.data.setdefault(LIST_PARAMETER, "inbox")
-            cow_rest.auth_token = None  # get token from config
-            self.cowsLists.add_task_to_list_intent(message)
+            message.data.setdefault(LIST_PARAMETER, self.list_name)
 
-            timeline = cow_rest.timeline
-            cow_rest.timeline = None
+            # Read empty list
             self.cowsLists.read_list_intent(message)
-            # mock_speak_dialog.assert_any_call("ReadList", ANY)
+            mock_speak_dialog.assert_any_call("NoTaskOnList", ANY)
+            mock_speak_dialog.reset_mock()
+
+            # Add task to list
+            self.cowsLists.add_task_to_list_intent(message)
+            timeline = cow_rest.timeline
+            mock_speak_dialog.reset_mock()
+
+            # Read one item
+            self.cowsLists.read_list_intent(message)
+            mock_speak_dialog.assert_any_call("ReadListOneItem", ANY)
+            mock_speak.assert_any_call(self.task_name)
+
+            # Add identical task to list
+            self.cowsLists.add_task_to_list_intent(message)
+            timeline = cow_rest.timeline
+            mock_speak_dialog.reset_mock()
+
+            # Read more than one item nomatch list
+            message = Message(self)
+            message.data.setdefault(LIST_PARAMETER, self.list_name + 'x')
+            self.cowsLists.read_list_intent(message)
+            mock_speak_dialog.assert_any_call("ReadList", ANY)
+            mock_speak_dialog.assert_any_call("UsingAnotherList", ANY)
             mock_speak.assert_any_call(self.task_name)
 
             # Remove task again
-            cow_rest.timeline = timeline
             message = Message(self)
-            message.data.setdefault(UNDO_CONTEXT, mock_set_context.call_args_list[0][0][1])
-            self.cowsLists.undo_intent(message)
-            mock_remove_context.assert_called_with(UNDO_CONTEXT)
-            mock_speak_dialog.assert_called_with("AddTaskToListUndo", ANY)
+            message.data.setdefault(TASK_PARAMETER, self.task_name)
+            message.data.setdefault(LIST_PARAMETER, self.list_name)
+            self.cowsLists.complete_task_on_list_intent(message)
+            mock_speak_dialog.assert_any_call("CompleteManyTaskOnList", ANY)
 
 
 # @unittest.skip("Skip TestFindTaskOnList")
@@ -308,6 +330,113 @@ class TestFindTaskOnList(unittest.TestCase):
             mock_remove_context.assert_called_with(UNDO_CONTEXT)
             mock_speak_dialog.assert_called_with("AddTaskToListUndo", ANY)
 
+
+# @unittest.skip("Skip CompleteTaskOnList")
+class CompleteTaskOnList(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.cowsLists = CowsLists()
+        config.read(CONFIG_FILE)
+        cow_rest.api_key = config.get('auth', 'api_key')
+        cow_rest.secret = config.get('auth', 'secret')
+        cls.task_name = "Cows Lists test item: " + str(uuid.uuid1())
+        cls.list_name = 'test list'
+        print "Using task :" + cls.task_name
+
+    def test_find_task(self):
+        with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, \
+                patch('__init__.CowsLists.remove_context') as mock_remove_context, \
+                patch('__init__.CowsLists.set_context') as mock_set_context, \
+                patch('__init__.CowsLists.speak') as mock_speak, \
+                patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog:
+            # Complete non existent task - empty list
+            cow_rest.auth_token = None  # get token from config
+            message = Message(self)
+            message.data.setdefault(TASK_PARAMETER, self.task_name)
+            message.data.setdefault(LIST_PARAMETER, self.list_name)
+            self.cowsLists.complete_task_on_list_intent(message)
+            mock_speak_dialog.assert_called_with("NoTaskOnList", ANY)
+            mock_speak_dialog.assert_called_once()
+            mock_speak_dialog.reset_mock()
+
+            # Add test task
+            self.cowsLists.add_task_to_list_intent(message)
+            mock_speak_dialog.assert_called_with("AddTaskToList", ANY)
+            mock_speak_dialog.reset_mock()
+
+            # Complete task
+            mock_set_context.reset_mock()
+            self.cowsLists.complete_task_on_list_intent(message)
+            mock_speak_dialog.assert_called_with("CompleteTaskOnList", ANY)
+            mock_speak_dialog.assert_called_once()
+            self.assertEqual(mock_speak_dialog.call_args_list[0][0][1]['listName'], self.list_name)
+            self.assertEqual(mock_speak_dialog.call_args_list[0][0][1]['taskName'], self.task_name.lower())
+            mock_speak_dialog.reset_mock()
+
+            # Undo
+            message = Message(self)
+            message.data.setdefault(UNDO_CONTEXT, mock_set_context.call_args_list[0][0][1])
+            self.cowsLists.undo_intent(message)
+            mock_remove_context.assert_called_with(UNDO_CONTEXT)
+            mock_speak_dialog.assert_called_with("CompleteTaskOnListUndo", ANY)
+            mock_speak_dialog.reset_mock()
+
+            # Add new identical test task
+            message = Message(self)
+            message.data.setdefault(TASK_PARAMETER, self.task_name)
+            message.data.setdefault(LIST_PARAMETER, self.list_name)
+            self.cowsLists.add_task_to_list_intent(message)
+            mock_speak_dialog.assert_called_with("AddTaskToList", ANY)
+            mock_speak_dialog.reset_mock()
+
+            # Complete task nomatch and list match
+            mock_set_context.reset_mock()
+            message = Message(self)
+            message.data.setdefault(TASK_PARAMETER, self.task_name + 'x')
+            message.data.setdefault(LIST_PARAMETER, self.list_name)
+            self.cowsLists.complete_task_on_list_intent(message)
+            mock_speak_dialog.assert_any_call("FindTaskOnListMismatch", ANY)
+            mock_speak_dialog.assert_any_call("CompleteManyTaskOnList", ANY)
+            self.assertEqual(mock_speak_dialog.call_args_list[1][0][1]['nofTask'], '2')
+            self.assertEqual(mock_speak_dialog.call_args_list[1][0][1]['listName'], self.list_name)
+            self.assertEqual(mock_speak_dialog.call_args_list[1][0][1]['taskName'], self.task_name.lower())
+            mock_speak_dialog.reset_mock()
+
+            # Undo
+            message = Message(self)
+            message.data.setdefault(UNDO_CONTEXT, mock_set_context.call_args_list[0][0][1])
+            self.cowsLists.undo_intent(message)
+            mock_remove_context.assert_called_with(UNDO_CONTEXT)
+            mock_speak_dialog.assert_called_with("CompleteTaskOnListUndo", ANY)
+            mock_speak_dialog.reset_mock()
+
+            # Check both tasks complete undone
+            message = Message(self)
+            message.data.setdefault(LIST_PARAMETER, self.list_name)
+            self.cowsLists.read_list_intent(message)
+            self.assertEqual(mock_speak_dialog.call_args_list[0][0][1]['nofTask'], '2')
+            mock_speak_dialog.reset_mock()
+
+            # Add third identical test task
+            message = Message(self)
+            message.data.setdefault(TASK_PARAMETER, self.task_name)
+            message.data.setdefault(LIST_PARAMETER, self.list_name)
+            self.cowsLists.add_task_to_list_intent(message)
+            mock_speak_dialog.assert_called_with("AddTaskToList", ANY)
+            mock_speak_dialog.reset_mock()
+
+            # Complete any task on list nomatch
+            mock_set_context.reset_mock()
+            message = Message(self)
+            message.data.setdefault(TASK_PARAMETER, self.task_name)
+            message.data.setdefault(LIST_PARAMETER, self.list_name + str(uuid.uuid1()) + 'x')
+            mock_speak_dialog.reset_mock()
+            self.cowsLists.complete_task_on_list_intent(message)
+            mock_speak_dialog.assert_any_call("CompleteManyTaskOnList", ANY)
+            mock_speak_dialog.assert_any_call("UsingAnotherList", ANY)
+            self.assertEqual(mock_speak_dialog.call_args_list[1][0][1]['nofTask'], '3')
+            self.assertEqual(mock_speak_dialog.call_args_list[1][0][1]['listName'], self.list_name)
+            self.assertEqual(mock_speak_dialog.call_args_list[1][0][1]['taskName'], self.task_name.lower())
 
 if __name__ == '__main__':
     unittest.main()

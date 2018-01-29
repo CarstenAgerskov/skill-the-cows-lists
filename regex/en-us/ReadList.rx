@@ -1,3 +1,3 @@
-read my (?P<listName>.+) list$
+(read my) (?P<listName>.+) list$
 (read list) (?P<listName>.+)$
 

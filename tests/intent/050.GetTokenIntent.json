@@ -1,0 +1,7 @@
+{
+  "utterance": "get a token",
+  "intent_type": "GetTokenIntent",
+  "intent": {
+    "AddTaskToListKeyword": "get"
+  }
+}
