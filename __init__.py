@@ -214,7 +214,7 @@ class CowsLists(MycroftSkill):
             self.speak_dialog("CompleteTaskOnList", {TASK_PARAMETER: task_name_best_match,
                                                      LIST_PARAMETER: list_name_best_match})
         else:
-            self.speak_dialog("CompleteManyTaskOnList", {NOF_TASK_PARAMETER: str(len(selected_task_list)),
+            self.speak_dialog("CompleteManyTasksOnList", {NOF_TASK_PARAMETER: str(len(selected_task_list)),
                                                          TASK_PARAMETER: task_name_best_match,
                                                          LIST_PARAMETER: list_name_best_match})
 
