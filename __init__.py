@@ -51,6 +51,7 @@ class CowsLists(MycroftSkill):
     def __init__(self):
         super(CowsLists, self).__init__(name="TheCowsLists")
         self.stopSpeaking = False
+        reload(cow_rest)
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
