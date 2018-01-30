@@ -274,7 +274,7 @@ class TestReadList(unittest.TestCase):
             message.data.setdefault(TASK_PARAMETER, self.task_name)
             message.data.setdefault(LIST_PARAMETER, self.list_name)
             self.cowsLists.complete_task_on_list_intent(message)
-            mock_speak_dialog.assert_any_call("CompleteManyTaskOnList", ANY)
+            mock_speak_dialog.assert_any_call("CompleteManyTasksOnList", ANY)
 
 
 # @unittest.skip("Skip TestFindTaskOnList")
@@ -396,7 +396,7 @@ class CompleteTaskOnList(unittest.TestCase):
             message.data.setdefault(LIST_PARAMETER, self.list_name)
             self.cowsLists.complete_task_on_list_intent(message)
             mock_speak_dialog.assert_any_call("FindTaskOnListMismatch", ANY)
-            mock_speak_dialog.assert_any_call("CompleteManyTaskOnList", ANY)
+            mock_speak_dialog.assert_any_call("CompleteManyTasksOnList", ANY)
             self.assertEqual(mock_speak_dialog.call_args_list[1][0][1]['nofTask'], '2')
             self.assertEqual(mock_speak_dialog.call_args_list[1][0][1]['listName'], self.list_name)
             self.assertEqual(mock_speak_dialog.call_args_list[1][0][1]['taskName'], self.task_name.lower())
@@ -432,7 +432,7 @@ class CompleteTaskOnList(unittest.TestCase):
             message.data.setdefault(LIST_PARAMETER, self.list_name + str(uuid.uuid1()) + 'x')
             mock_speak_dialog.reset_mock()
             self.cowsLists.complete_task_on_list_intent(message)
-            mock_speak_dialog.assert_any_call("CompleteManyTaskOnList", ANY)
+            mock_speak_dialog.assert_any_call("CompleteManyTasksOnList", ANY)
             mock_speak_dialog.assert_any_call("UsingAnotherList", ANY)
             self.assertEqual(mock_speak_dialog.call_args_list[1][0][1]['nofTask'], '3')
             self.assertEqual(mock_speak_dialog.call_args_list[1][0][1]['listName'], self.list_name)
