@@ -199,7 +199,7 @@ class TestAddTaskToList(unittest.TestCase):
             mock_remove_context.assert_any_call(CONFIRM_CONTEXT)
             mock_remove_context.assert_any_call(UNDO_CONTEXT)
             mock_set_context.assert_called_with("ConfirmContext", ANY)
-            mock_speak_dialog.assert_called_with("AddTaskToListMismatch", ANY)
+            mock_speak_dialog.assert_called_with("AddTaskToListMismatch", ANY, expect_response=True)
             c = json.loads(mock_set_context.call_args_list[0][0][1])
             self.assertEqual(str(c['dialog']), "AddTaskToList")
 

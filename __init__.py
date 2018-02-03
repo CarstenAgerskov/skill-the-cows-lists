@@ -26,6 +26,7 @@ from mycroft.skills.core import MycroftSkill
 from mycroft.skills.core import intent_handler
 from mycroft.util.log import getLogger
 from os.path import dirname
+import traceback
 
 HOME_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(HOME_DIR)
@@ -43,6 +44,7 @@ LINE_PARAMETER = "lineNumber"
 NOF_TASK_PARAMETER = "nofTask"
 UNDO_CONTEXT = "UndoContext"
 CONFIRM_CONTEXT = "ConfirmContext"
+EXCEPTION_CONTEXT = "ExceptionContext"
 
 LOGGER = getLogger(__name__)
 
@@ -50,8 +52,8 @@ LOGGER = getLogger(__name__)
 class CowsLists(MycroftSkill):
     def __init__(self):
         super(CowsLists, self).__init__(name="TheCowsLists")
-        self.stopSpeaking = False
         reload(cow_rest)
+        self.last_traceback = None
 
     def initialize(self):
         self.load_data_files(dirname(__file__))
@@ -75,7 +77,7 @@ class CowsLists(MycroftSkill):
 
             return True
 
-        except Exception as e:
+        except Exception:
             self.speak_dialog('ConfigNotFound')
             return False
 
@@ -117,7 +119,6 @@ class CowsLists(MycroftSkill):
 
         return True
 
-
     def find_list(self, list_name):
         list_result, error_text, error_code = cow_rest.get_list()
 
@@ -138,7 +139,6 @@ class CowsLists(MycroftSkill):
         list_id = filter(lambda x: str(x['name']).lower() == list_name_best_match, list_result)[0]['id']
 
         return list_name_best_match, list_id, significance, None, None
-
 
     def find_task_on_list(self, task_name, list_name):
         list_name_best_match, list_id, significance, error_text, error_code = self.find_list(list_name)
@@ -174,9 +174,9 @@ class CowsLists(MycroftSkill):
 
         return list_name_best_match, task_name_best_match, list_id, selected_task_list
 
-
     def complete_task_on_list(self, task_name, list_name):
-        list_name_best_match, task_name_best_match, list_id, selected_task_list = self.find_task_on_list(task_name, list_name)
+        list_name_best_match, task_name_best_match, list_id, selected_task_list = self.find_task_on_list(task_name,
+                                                                                                         list_name)
         if not list_name_best_match:
             return False
 
@@ -194,7 +194,7 @@ class CowsLists(MycroftSkill):
             return False
 
         c = {"dialog": "CompleteTaskOnListUndo",
-                     "dialogParam": {TASK_PARAMETER: task_name_best_match, LIST_PARAMETER: list_name_best_match},
+             "dialogParam": {TASK_PARAMETER: task_name_best_match, LIST_PARAMETER: list_name_best_match},
              'transaction_id': []}
 
         for t in selected_task_list:
@@ -215,13 +215,46 @@ class CowsLists(MycroftSkill):
                                                      LIST_PARAMETER: list_name_best_match})
         else:
             self.speak_dialog("CompleteManyTasksOnList", {NOF_TASK_PARAMETER: str(len(selected_task_list)),
-                                                         TASK_PARAMETER: task_name_best_match,
-                                                         LIST_PARAMETER: list_name_best_match})
+                                                          TASK_PARAMETER: task_name_best_match,
+                                                          LIST_PARAMETER: list_name_best_match})
 
         self.set_context(UNDO_CONTEXT, json.dumps(c))
 
         return True
 
+    def speak_exception(self, trace_back, function_name):
+        self.last_traceback = "Error in " + function_name + ": " + trace_back
+        LOGGER.exception(self.last_traceback)
+        self.speak_dialog('GeneralError',
+                          {FUNCTION_NAME_PARAMETER: function_name,
+                           LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
+        self.remove_context(CONFIRM_CONTEXT)
+        self.set_context(EXCEPTION_CONTEXT)
+        self.speak_dialog('AskSendException', None, expect_response=True)
+
+    @intent_handler(IntentBuilder("SendExceptionIntent").require("YesKeyword").require(EXCEPTION_CONTEXT).build())
+    @removes_context(EXCEPTION_CONTEXT)
+    @removes_context(UNDO_CONTEXT)
+    @removes_context(CONFIRM_CONTEXT)
+    def send_exception_intent(self):
+        try:
+            mail_body = "This mail contains details of an exception in the cows lists<br>" \
+                        + "Please report the issue at " \
+                        + '<a href = "https://github.com/CarstenAgerskov/skill-the-cows-lists/issues">https://github.com/CarstenAgerskov/skill-the-cows-lists/issues</a>' \
+                        + "<br>When reporting the issue, make sure to include:<br><br>" \
+                        + "* A description of your dialog with Mycroft<br>" \
+                        + "* Any other details that may help<br>" \
+                        + "* The exception text below<br><br>" \
+                        + self.last_traceback
+
+            self.send_email("Exception details", mail_body)
+            self.speak_dialog('SendException')
+
+        except Exception as e:
+            LOGGER.exception("Error in send_exception: {0}".format(e))
+            self.speak_dialog('GeneralError',
+                              {FUNCTION_NAME_PARAMETER: "send exception",
+                               LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
 
     @intent_handler(IntentBuilder("AuthenticateIntent").require("AuthenticateKeyword").build())
     @removes_context(UNDO_CONTEXT)
@@ -255,11 +288,8 @@ class CowsLists(MycroftSkill):
             self.send_email("Authentication", mail_body)
             self.speak_dialog("EmailSent")
 
-        except Exception as e:
-            LOGGER.exception("Error in authenticate_intent: {0}".format(e))
-            self.speak_dialog('GeneralError',
-                              {FUNCTION_NAME_PARAMETER: "authenticate intent",
-                               LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
+        except Exception:
+            self.speak_exception(traceback.format_exc(), "get token intent")
 
     @intent_handler(IntentBuilder("GetTokenIntent").require("GetTokenKeyword").build())
     @removes_context(UNDO_CONTEXT)
@@ -296,11 +326,8 @@ class CowsLists(MycroftSkill):
 
             self.speak_dialog("GotToken")
 
-        except Exception as e:
-            LOGGER.exception("Error in get_token_intent: {0}".format(e))
-            self.speak_dialog('GeneralError',
-                              {FUNCTION_NAME_PARAMETER: "get token intent",
-                               LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
+        except Exception:
+            self.speak_exception(traceback.format_exc(), "get token intent")
 
     @intent_handler(IntentBuilder("AddTaskToListIntent").require("AddTaskToListKeyword").require(TASK_PARAMETER).
                     require(LIST_PARAMETER).build())
@@ -337,17 +364,14 @@ class CowsLists(MycroftSkill):
 
                 self.set_context(CONFIRM_CONTEXT, json.dumps(c))
                 self.speak_dialog("AddTaskToListMismatch",
-                                  {LIST_PARAMETER: list_name, BEST_MATCH_PARAMETER: list_name_best_match})
+                                  {LIST_PARAMETER: list_name, BEST_MATCH_PARAMETER: list_name_best_match},
+                                  expect_response=True)
                 return
 
             self.add_task_to_list(task_name, list_name_best_match, list_id)
 
-        except Exception as e:
-            LOGGER.exception("Error in add_task_to_list_intent: {0}".format(e))
-            self.speak_dialog('GeneralError',
-                              {FUNCTION_NAME_PARAMETER: "add task to list intent",
-                               LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
-
+        except Exception:
+            self.speak_exception(traceback.format_exc(), "add task to list intent")
 
     @intent_handler(IntentBuilder("FindTaskOnListIntent").require("FindTaskOnListKeyword").require(TASK_PARAMETER).
                     require(LIST_PARAMETER).build())
@@ -359,7 +383,8 @@ class CowsLists(MycroftSkill):
             if not self.operation_init():
                 return
 
-            list_name_best_match, task_name_best_match, list_id, selected_task_list = self.find_task_on_list(task_name, list_name)
+            list_name_best_match, task_name_best_match, list_id, selected_task_list = self.find_task_on_list(task_name,
+                                                                                                             list_name)
 
             if task_name.lower() != task_name_best_match.lower():
                 self.speak_dialog("FindTaskOnListMismatch",
@@ -370,14 +395,11 @@ class CowsLists(MycroftSkill):
                 self.speak_dialog("FindTaskOnList",
                                   {TASK_PARAMETER: task_name_best_match, LIST_PARAMETER: list_name_best_match})
 
-        except Exception as e:
-            LOGGER.exception("Error in find_task_intent: {0}".format(e))
-            self.speak_dialog('GeneralError',
-                              {FUNCTION_NAME_PARAMETER: "find task intent",
-                               LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
+        except Exception:
+            self.speak_exception(traceback.format_exc(), "find task intent")
 
-
-    @intent_handler(IntentBuilder("CompleteTaskOnListIntent").require("CompleteTaskOnListKeyword").require(TASK_PARAMETER).
+    @intent_handler(IntentBuilder("CompleteTaskOnListIntent").require("CompleteTaskOnListKeyword").
+                    require(TASK_PARAMETER).
                     require(LIST_PARAMETER).build())
     def complete_task_on_list_intent(self, message):
         try:
@@ -389,14 +411,10 @@ class CowsLists(MycroftSkill):
             if not self.operation_init():
                 return
 
-            self.complete_task_on_list(task_name,list_name)
+            self.complete_task_on_list(task_name, list_name)
 
-        except Exception as e:
-            LOGGER.exception("Error in complete_task_on_list_intent: {0}".format(e))
-            self.speak_dialog('GeneralError',
-                              {FUNCTION_NAME_PARAMETER: "read list intent",
-                               LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
-
+        except Exception:
+            self.speak_exception(traceback.format_exc(), "complete task on list intent")
 
     @intent_handler(IntentBuilder("ReadListIntent").require("ReadListKeyword").require(LIST_PARAMETER).build())
     def read_list_intent(self, message):
@@ -407,6 +425,7 @@ class CowsLists(MycroftSkill):
                 return
 
             list_name_best_match, list_id, significance, error_text, error_code = self.find_list(list_name)
+
             if error_text:
                 self.speak_dialog('RestResponseError',
                                   {ERROR_TEXT_PARAMETER: error_text,
@@ -437,12 +456,8 @@ class CowsLists(MycroftSkill):
 
             map(lambda x: self.speak(x['task_name']), flat_task_list)
 
-        except Exception as e:
-            LOGGER.exception("Error in read_list_intent: {0}".format(e))
-            self.speak_dialog('GeneralError',
-                              {FUNCTION_NAME_PARAMETER: "read list intent",
-                               LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
-
+        except Exception:
+            self.speak_exception(traceback.format_exc(), "read list intent")
 
     # RTM can roll back some operations, other has to be compensated. The undo itent hides this complexity
     @intent_handler(IntentBuilder("UndoIntent").require("UndoKeyword").require(UNDO_CONTEXT).build())
@@ -473,11 +488,8 @@ class CowsLists(MycroftSkill):
                         return
                 self.speak_dialog(c['dialog'], c['dialogParam'])
 
-        except Exception as e:
-            LOGGER.exception("Error in undo_intent: {0}".format(e))
-            self.speak_dialog('GeneralError',
-                              {FUNCTION_NAME_PARAMETER: "undo intent",
-                               LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
+        except Exception:
+            self.speak_exception(traceback.format_exc(), "undo intent")
 
     @intent_handler(IntentBuilder("ConfirmIntent").require("YesKeyword").require("ConfirmContext").build())
     def confirm_intent(self, message):
@@ -487,14 +499,13 @@ class CowsLists(MycroftSkill):
             if str(c['dialog']) == "AddTaskToList":
                 self.add_task_to_list(c['task']['task_name'], c['task']['list_name'], c['task']['list_id'])
 
-        except Exception as e:
-            LOGGER.exception("Error in confirm_intent: {0}".format(e))
-            self.speak_dialog('GeneralError',
-                              {FUNCTION_NAME_PARAMETER: "confirm intent",
-                               LINE_PARAMETER: format(sys.exc_info()[-1].tb_lineno)})
+        except Exception:
+            self.speak_exception(traceback.format_exc(), "confirm intent")
 
-    @intent_handler(IntentBuilder("NoConfirmIntent").require("NoKeyword").require("ConfirmContext").build())
+    @intent_handler(
+        IntentBuilder("NoConfirmIntent").require("NoKeyword").one_of(CONFIRM_CONTEXT, EXCEPTION_CONTEXT).build())
     @removes_context(CONFIRM_CONTEXT)
+    @removes_context(EXCEPTION_CONTEXT)
     def no_confirm_intent(self):
         self.speak_dialog('NoConfirm')
 
