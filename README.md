@@ -20,7 +20,7 @@ will add a task called "remember to call home" to the Remember The Milk's Inbox,
 The skill will try to recognize mispronounced list names, for example:
 * You: "Hey Mycroft, add task to my bin box list"
 * Mycroft: "I can't find a list called bin box, do you want to add the task to inbox instead?
-* You: "Hey Mycroft, yes"
+* You: "yes"
 * Mycroft: "Task was added to list inbox"
 
 You must answer yes or no within 2 minutes, or Mycroft will forget  the context, and will not add the task to the list.
@@ -28,12 +28,12 @@ You must answer yes or no within 2 minutes, or Mycroft will forget  the context,
 Be careful about using the word 'list' when you name the lists in Remember The Milk. For instance, the skill can handle a list called 'grocery' OR a list called 'grocery list', but if you have BOTH, the skill will only find the 'grocery list'.
 
 #### Undo
-You can undo the last operation, within 2 minutes, for example:
-* You: "Hey Mycroft, add task to list Inbox"
+If an operation makes changes to your lists or tasks, it can be undone within 2 minutes, for example:
+* You: "Hey Mycroft, add task to list inbox"
 * Mycroft: "Task was added to list inbox"
 * You: "Hey Mycroft, undo"
 * Mycroft: "I have removed task from list inbox again"
-The words undo, revert, roll back, restore can be used
+The words "undo", "revert", "roll back" and "restore" can be used
  
 #### Read list
 Read the tasks on a list:
@@ -53,7 +53,7 @@ The skill will try to match both list and task, like this:
 * Mycroft: "I did not find blink, but I did find milk on list grocery"
 
 #### Complete task
-Find a task on a list:
+Find a task on a list, the operation can be undone within 2 minutes:
 * You: "Hey Mycroft, complete call home on my personal list"
 * Mycroft: "Call home on list personal was marked complete"
 * You: "Hey Mycroft, restore"
@@ -65,6 +65,16 @@ The skill will try to match both list and task, like this:
 * Mycroft: "I did not find blink, but I did find milk on list grocery"
 * Mycroft: "Milk on list grocery was marked complete"
 
+#### Complete all tasks on a list
+Complete all tasks on a list, this operation may take a while if there are many tasks. The operation can be undone within 2 minutes: 
+* You: "Hey Mycroft, complete my grocery list"
+* Mycroft: "3 tasks on list grocery was marked complete"
+* You: "Hey Mycroft, restore"
+* Mycroft: "I have restored 3 tasks on list grocery again"
+
+#### Report an error
+In case of an error, the cows lists will ask you if you want a mail with the details. Answer yes, and you will receive a mail from Mycroft with further details on how to report the issue, and all the details about the error.
+You receive the mail, not the skill developer. You decide what information to put in the issue report.
 
 ## Configuration
 To access your Remember The Milk account via the rest API, it is neccesary to apply for an API key at
@@ -95,6 +105,11 @@ to mycroft.conf:
     "secret": "many_characters"
   }  
 ```
+
+## Troubleshooting
+The cows lists is tested against a normal remember the milk account, not a Pro account.
+The language is set to "English US" in remember the milk, under settings->account. I have reports that 
+some different language settings do not work with the cows lists.
 
 #### If your token expire or become invalid
 On rare occasions the token may expire or become invalid. In that case you must repeat the steps above.

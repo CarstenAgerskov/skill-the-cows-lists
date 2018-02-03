@@ -241,7 +241,9 @@ class CowsLists(MycroftSkill):
             mail_body = "This mail contains details of an exception in the cows lists<br>" \
                         + "Please report the issue at " \
                         + '<a href = "https://github.com/CarstenAgerskov/skill-the-cows-lists/issues">https://github.com/CarstenAgerskov/skill-the-cows-lists/issues</a>' \
-                        + "<br>When reporting the issue, make sure to include:<br><br>" \
+                        + "<br>When reporting the issue, you decide what information to include, " \
+                        + "or if you wish to anonymize any data. " \
+                        + "Please provide the following information:<br><br>" \
                         + "* A description of your dialog with Mycroft<br>" \
                         + "* Any other details that may help<br>" \
                         + "* The exception text below<br><br>" \
@@ -459,6 +461,78 @@ class CowsLists(MycroftSkill):
         except Exception:
             self.speak_exception(traceback.format_exc(), "read list intent")
 
+    @intent_handler(IntentBuilder("CompleteListIntent").require("CompleteTaskOnListKeyword").require(LIST_PARAMETER).build())
+    def complete_list_intent(self, message):
+        try:
+            list_name = message.data.get(LIST_PARAMETER)
+
+            if not self.operation_init():
+                return
+
+            list_name_best_match, list_id, significance, error_text, error_code = self.find_list(list_name)
+
+            if error_text:
+                self.speak_dialog('RestResponseError',
+                                  {ERROR_TEXT_PARAMETER: error_text,
+                                   ERROR_CODE_PARAMETER: error_code})
+                return
+
+            if significance < 100:
+                self.speak_dialog("UsingAnotherList", {LIST_PARAMETER: list_name,
+                                                       BEST_MATCH_PARAMETER: list_name_best_match})
+
+            task_list, error_code, error_text = cow_rest.list_task("status:incomplete", list_id)
+            if error_text:
+                self.speak_dialog('RestResponseError',
+                                  {ERROR_TEXT_PARAMETER: error_text,
+                                   ERROR_CODE_PARAMETER: error_code})
+                return
+
+            flat_task_list = cow_rest.flat_task_list(task_list)
+
+            if len(flat_task_list) == 0:
+                self.speak_dialog("NoTaskOnList",
+                                  {LIST_PARAMETER: list_name_best_match})
+                return
+
+            if len(flat_task_list) > 10:
+                self.speak_dialog('CompleteListStart', {NOF_TASK_PARAMETER: str(len(flat_task_list)),
+                                     LIST_PARAMETER: list_name_best_match})
+
+            error_text, error_code = cow_rest.get_timeline(cow_rest)
+            if error_text:
+                self.speak_dialog('RestResponseError',
+                                  {ERROR_TEXT_PARAMETER: error_text,
+                                   ERROR_CODE_PARAMETER: error_code})
+                return False
+
+            c = {"dialog": "CompleteListOneTaskUndo" if len(flat_task_list) == 1 else "CompleteListUndo",
+                 "dialogParam": {NOF_TASK_PARAMETER: str(len(flat_task_list)),
+                                 LIST_PARAMETER: list_name_best_match},
+                 'transaction_id': []}
+
+            for t in flat_task_list:
+                transaction_id, error_text, error_code = cow_rest.complete_task(t['task_id'],
+                                                                                t['taskseries_id'],
+                                                                                list_id)
+                if error_text:
+                    self.speak_dialog('RestResponseError',
+                                      {ERROR_TEXT_PARAMETER: error_text,
+                                       ERROR_CODE_PARAMETER: error_code})
+                    # RECOVER
+                    return False
+
+                c['transaction_id'].append(transaction_id)
+
+            self.speak_dialog("CompleteListOneTask" if len(flat_task_list) == 1 else "CompleteList",
+                              {LIST_PARAMETER: list_name_best_match,
+                               NOF_TASK_PARAMETER: str(len(flat_task_list))})
+
+            self.set_context(UNDO_CONTEXT, json.dumps(c))
+
+        except Exception:
+            self.speak_exception(traceback.format_exc(), "read list intent")
+
     # RTM can roll back some operations, other has to be compensated. The undo itent hides this complexity
     @intent_handler(IntentBuilder("UndoIntent").require("UndoKeyword").require(UNDO_CONTEXT).build())
     @removes_context(UNDO_CONTEXT)
@@ -478,7 +552,7 @@ class CowsLists(MycroftSkill):
 
                 self.speak_dialog(c['dialog'], c['dialogParam'])
 
-            if c['dialog'] == "CompleteTaskOnListUndo":
+            if c['dialog'] in ["CompleteTaskOnListUndo", "CompleteListOneTaskUndo", "CompleteListUndo"]:
                 for t in c['transaction_id']:
                     error_text, error_code = cow_rest.roll_back(str(t))
                     if error_text:
