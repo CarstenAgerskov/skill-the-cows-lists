@@ -45,6 +45,7 @@ NOF_TASK_PARAMETER = "nofTask"
 UNDO_CONTEXT = "UndoContext"
 CONFIRM_CONTEXT = "ConfirmContext"
 EXCEPTION_CONTEXT = "ExceptionContext"
+MAX_TASK_COMPLETE = 40
 
 LOGGER = getLogger(__name__)
 
@@ -464,6 +465,7 @@ class CowsLists(MycroftSkill):
     @intent_handler(IntentBuilder("CompleteListIntent").require("CompleteTaskOnListKeyword").require(LIST_PARAMETER).build())
     def complete_list_intent(self, message):
         try:
+            LOGGER.info("In complete list intent")
             list_name = message.data.get(LIST_PARAMETER)
 
             if not self.operation_init():
@@ -495,8 +497,15 @@ class CowsLists(MycroftSkill):
                                   {LIST_PARAMETER: list_name_best_match})
                 return
 
-            if len(flat_task_list) > 10:
-                self.speak_dialog('CompleteListStart', {NOF_TASK_PARAMETER: str(len(flat_task_list)),
+            nof_tasks_to_complete = len(flat_task_list)
+
+            if nof_tasks_to_complete > MAX_TASK_COMPLETE:
+                nof_tasks_to_complete = MAX_TASK_COMPLETE
+                self.speak_dialog('CompletePartOfListStart', {NOF_TASK_PARAMETER: str(len(flat_task_list))})
+
+
+            if nof_tasks_to_complete > 10:
+                self.speak_dialog('CompleteListStart', {NOF_TASK_PARAMETER: nof_tasks_to_complete,
                                      LIST_PARAMETER: list_name_best_match})
 
             error_text, error_code = cow_rest.get_timeline(cow_rest)
@@ -504,13 +513,14 @@ class CowsLists(MycroftSkill):
                 self.speak_dialog('RestResponseError',
                                   {ERROR_TEXT_PARAMETER: error_text,
                                    ERROR_CODE_PARAMETER: error_code})
-                return False
+                return
 
-            c = {"dialog": "CompleteListOneTaskUndo" if len(flat_task_list) == 1 else "CompleteListUndo",
-                 "dialogParam": {NOF_TASK_PARAMETER: str(len(flat_task_list)),
+            c = {"dialog": "CompleteListOneTaskUndo" if nof_tasks_to_complete == 1 else "CompleteListUndo",
+                 "dialogParam": {NOF_TASK_PARAMETER: nof_tasks_to_complete,
                                  LIST_PARAMETER: list_name_best_match},
                  'transaction_id': []}
 
+            i = nof_tasks_to_complete
             for t in flat_task_list:
                 transaction_id, error_text, error_code = cow_rest.complete_task(t['task_id'],
                                                                                 t['taskseries_id'],
@@ -520,13 +530,17 @@ class CowsLists(MycroftSkill):
                                       {ERROR_TEXT_PARAMETER: error_text,
                                        ERROR_CODE_PARAMETER: error_code})
                     # RECOVER
-                    return False
+                    return
 
                 c['transaction_id'].append(transaction_id)
 
-            self.speak_dialog("CompleteListOneTask" if len(flat_task_list) == 1 else "CompleteList",
+                i = i - 1
+                if i < 1:
+                    break
+
+            self.speak_dialog("CompleteListOneTask" if nof_tasks_to_complete == 1 else "CompleteList",
                               {LIST_PARAMETER: list_name_best_match,
-                               NOF_TASK_PARAMETER: str(len(flat_task_list))})
+                               NOF_TASK_PARAMETER: nof_tasks_to_complete})
 
             self.set_context(UNDO_CONTEXT, json.dumps(c))
 
