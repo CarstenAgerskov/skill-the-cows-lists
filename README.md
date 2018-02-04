@@ -72,6 +72,10 @@ Complete all tasks on a list, this operation may take a while if there are many 
 * You: "Hey Mycroft, restore"
 * Mycroft: "I have restored 3 tasks on list grocery again"
 
+To keep processing time down, a maximum of 40 tasks can be deleted for each complete list command. The
+RTM api has a rate limit of 1 call per second, 40 tasks will take approximately 40 seconds to complete.
+If you use the Mycroft "stop" command during processing, it may not be possible to undo the operation.
+
 #### Report an error
 In case of an error, the cows lists will ask you if you want a mail with the details. Answer yes, and you will receive a mail from Mycroft with further details on how to report the issue, and all the details about the error.
 You receive the mail, not the skill developer. You decide what information to put in the issue report.

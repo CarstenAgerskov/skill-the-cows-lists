@@ -1,1 +1,1 @@
-I will mark {{nofTask}} tasks on list {{listName}} complete, this may take a while.
+I will mark {{nofTask}} tasks on list {{listName}} complete, this may take a while. You can undo this operation by saying either restore, undo or revert after I finish
