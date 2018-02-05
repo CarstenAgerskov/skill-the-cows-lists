@@ -389,6 +389,9 @@ class CowsLists(MycroftSkill):
             list_name_best_match, task_name_best_match, list_id, selected_task_list = self.find_task_on_list(task_name,
                                                                                                              list_name)
 
+            if not task_name_best_match:
+                return
+
             if task_name.lower() != task_name_best_match.lower():
                 self.speak_dialog("FindTaskOnListMismatch",
                                   {TASK_PARAMETER: task_name,

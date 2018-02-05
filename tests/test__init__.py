@@ -396,7 +396,7 @@ class CompleteTaskOnList(unittest.TestCase):
             message = Message(self)
             message.data.setdefault(LIST_PARAMETER, self.list_name)
             self.cowsLists.complete_list_intent(message)
-            mock_speak_dialog.assert_called_with("CompleteListOneItem", ANY)
+            mock_speak_dialog.assert_called_with("CompleteListOneTask", ANY)
             mock_speak_dialog.assert_called_once()
             mock_speak_dialog.reset_mock()
 
@@ -480,7 +480,7 @@ class CompleteTaskOnList(unittest.TestCase):
             self.cowsLists.complete_list_intent(message)
             mock_speak_dialog.assert_called_with("CompleteList", ANY)
             mock_speak_dialog.assert_called_once()
-            self.assertEqual(mock_speak_dialog.call_args_list[0][0][1]['nofTask'], '3')
+            self.assertEqual(mock_speak_dialog.call_args_list[0][0][1]['nofTask'], 3)
             mock_speak_dialog.reset_mock()
 
             # Undo (restore 3 tasks)
@@ -498,7 +498,7 @@ class CompleteTaskOnList(unittest.TestCase):
             self.cowsLists.complete_list_intent(message)
             mock_speak_dialog.assert_called_with("CompleteList", ANY)
             mock_speak_dialog.assert_called_once()
-            self.assertEqual(mock_speak_dialog.call_args_list[0][0][1]['nofTask'], '3')
+            self.assertEqual(mock_speak_dialog.call_args_list[0][0][1]['nofTask'], 3)
             mock_speak_dialog.reset_mock()
 
 
