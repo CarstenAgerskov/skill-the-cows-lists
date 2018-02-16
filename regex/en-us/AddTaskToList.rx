@@ -1,3 +1,3 @@
-(add) (?P<taskName>.+) (to my) (?P<listName>.+) (list)
-^add (?P<taskName>.+) to list (?P<listName>.+)$
+add (?P<taskName>.+) to (?P<listName>.+) list$
+add (?P<taskName>.+) to list (?P<listName>.+)$
 

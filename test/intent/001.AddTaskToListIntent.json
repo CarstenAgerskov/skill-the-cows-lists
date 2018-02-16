@@ -1,0 +1,11 @@
+{
+  "utterance": "add some to my none list",
+  "intent_type": "AddTaskToListIntent",
+  "intent": {
+    "taskName": "some",
+    "listName": "none",
+    "AddTaskToListKeyword": "add"
+  },
+  "assert": "[['and', ['equal', 'type', 'speak'], ['match', ['data', 'utterance'], 'I can\\'t find a list called none.*']], ['and', ['equal', 'type', 'remove_context'], ['equal', ['data', 'context'], 'UndoContext']], ['and', ['equal', 'type', 'remove_context'], ['equal', ['data', 'context'], 'ConfirmContext']]]"
+}
+

@@ -1,9 +1,0 @@
-{
-  "utterance": "add some to my none list",
-  "intent_type": "AddTaskToListIntent",
-  "intent": {
-    "taskname": "some",
-    "listname": "none",
-    "AddTaskToListKeyword": "add"
-  }
-}

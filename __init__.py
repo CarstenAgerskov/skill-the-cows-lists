@@ -126,6 +126,10 @@ class CowsLists(MycroftSkill):
         if error_text:
             return None, None, None, error_text, error_code
 
+        # Workaround the intent parser/adapt cant pass/recognize regex snippet "(my|the)"
+        if str(list_name).startswith('my ') and len(str(list_name)) > 3:
+            list_name = list_name[3:]
+
         # Workaround the intent parser remove the word list: First, try to match to a "list_name list"
         list_name_best_match, significance = process.extractOne(list_name + " list",
                                                                 map(lambda x: str(x['name']).lower(),

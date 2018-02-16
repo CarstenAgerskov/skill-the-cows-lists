@@ -23,6 +23,8 @@ The skill will try to recognize mispronounced list names, for example:
 * You: "yes"
 * Mycroft: "Task was added to list inbox"
 
+In general, for this operation and all operations below, you can substitute "my" list with "the" list, i.e. "add milk to the grocery list" is valid.
+
 You must answer yes or no within 2 minutes, or Mycroft will forget  the context, and will not add the task to the list.
 
 Be careful about using the word 'list' when you name the lists in Remember The Milk. For instance, the skill can handle a list called 'grocery' OR a list called 'grocery list', but if you have BOTH, the skill will only find the 'grocery list'.
@@ -67,7 +69,7 @@ The skill will try to match both list and task, like this:
 
 #### Complete all tasks on a list
 Complete all tasks on a list, this operation may take a while if there are many tasks. The operation can be undone within 2 minutes: 
-* You: "Hey Mycroft, complete my grocery list"
+* You: "Hey Mycroft, complete all on my grocery list"
 * Mycroft: "3 tasks on list grocery was marked complete"
 * You: "Hey Mycroft, restore"
 * Mycroft: "I have restored 3 tasks on list grocery again"

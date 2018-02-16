@@ -2,7 +2,7 @@
   "utterance": "read list none",
   "intent_type": "ReadListIntent",
   "intent": {
-    "listname": "none",
-    "ReadListKeyword": "read"
+    "listName": "none",
+    "ReadListKeyword": "read list"
   }
 }
