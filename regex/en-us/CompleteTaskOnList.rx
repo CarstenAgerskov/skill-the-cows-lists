@@ -1,3 +1,2 @@
 complete (?P<taskName>.+) on (?P<listName>.+) list$
 complete (?P<taskName>.+) on list (?P<listName>.+)$
-

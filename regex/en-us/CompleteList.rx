@@ -1,3 +1,2 @@
 complete all on (?P<listName>.+) list$
 complete list (?P<listName>.+)$
-
