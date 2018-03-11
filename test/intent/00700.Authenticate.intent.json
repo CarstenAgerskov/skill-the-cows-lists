@@ -1,0 +1,8 @@
+{
+  "utterance": "authenticate with remember the milk",
+  "intent_type": "AuthenticateIntent",
+  "intent": {
+    "AuthenticateKeyword": "authenticate with"
+  },
+  "expected_response": "((My token is valid)|(I have sent you an e-mail)|(I could not read the configuration)|(It seems that you are in the process of authentication)).*"
+}

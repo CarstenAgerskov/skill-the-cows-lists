@@ -1,0 +1,11 @@
+{
+  "utterance": "complete something on the test list",
+  "intent_type": "CompleteTaskOnListIntent",
+  "intent": {
+    "taskName": "something",
+    "listName": "test",
+    "CompleteTaskOnListKeyword": "complete"
+  },
+  "expected_response": "((something on list test list was marked complete)|(.* tasks named something on list test list was marked complete)|(I cant find a list called test)|(I did not find)|(I could not read the configuration)|(I am currently not authenticated)|(It seems that you are in the process of authentication)).*"
+
+}

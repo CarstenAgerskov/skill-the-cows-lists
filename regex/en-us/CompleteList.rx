@@ -1,2 +1,2 @@
-complete all on (?P<listName>.+) list$
+complete all on (my )?(?P<listName>.+) list$
 complete list (?P<listName>.+)$

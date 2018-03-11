@@ -1,0 +1,10 @@
+{
+  "utterance": "no",
+  "set_context": {"ConfirmContext": "{\"dialog\": \"testrunner\"}"},
+  "intent_type": "ConfirmIntent",
+  "intent": {
+    "NoKeyword": "no"
+  },
+  "expected_response": "O K , i will forget it",
+  "changed_context": ["ConfirmContext", "ExceptionContext"]
+}

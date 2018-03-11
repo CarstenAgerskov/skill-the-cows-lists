@@ -1,9 +1,0 @@
-{
-  "utterance": "find some on the none list",
-  "intent_type": "FindTaskOnListIntent",
-  "intent": {
-    "taskName": "some",
-    "listName": "none",
-    "FindTaskOnListKeyword": "find"
-  }
-}

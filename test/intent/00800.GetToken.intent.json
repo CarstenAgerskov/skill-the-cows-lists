@@ -1,0 +1,9 @@
+{
+  "utterance": "get a token",
+  "intent_type": "GetTokenIntent",
+  "intent": {
+    "GetTokenKeyword": "get token"
+  },
+  "expected_response": "((My token is valid)|(I must authenticate before getting a token)|(I could not read the configuration)|(It seems that you are in the process of authentication)).*"
+
+}

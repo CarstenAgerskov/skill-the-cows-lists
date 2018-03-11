@@ -1,0 +1,9 @@
+{
+  "utterance": "undo",
+  "set_context": {"UndoContext": "{\"dialog\": \"testrunner\"}"},
+  "intent_type": "UndoIntent",
+  "intent": {
+    "UndoKeyword": "undo"
+  },
+  "changed_context": ["UndoContext"]
+}

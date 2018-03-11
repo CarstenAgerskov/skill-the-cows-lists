@@ -1,9 +1,0 @@
-{
-  "utterance": "complete some on the none list",
-  "intent_type": "CompleteTaskOnListIntent",
-  "intent": {
-    "taskName": "some",
-    "listName": "none",
-    "CompleteTaskOnListKeyword": "complete"
-  }
-}

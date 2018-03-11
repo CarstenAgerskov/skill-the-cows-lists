@@ -1,0 +1,9 @@
+{
+  "utterance": "confirm",
+  "set_context": {"ConfirmContext": "{\"dialog\": \"testrunner\"}"},
+  "intent_type": "ConfirmIntent",
+  "intent": {
+    "YesKeyword": "confirm"
+  },
+  "changed_context": ["ConfirmContext"]
+}

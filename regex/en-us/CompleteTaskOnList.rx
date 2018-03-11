@@ -1,2 +1,2 @@
-complete (?P<taskName>.+) on (?P<listName>.+) list$
-complete (?P<taskName>.+) on list (?P<listName>.+)$
+complete (?!(all))(?P<taskName>.+) on (my )?(?P<listName>.+) list$
+complete (?!(all))(?P<taskName>.+) on list (?P<listName>.+)$

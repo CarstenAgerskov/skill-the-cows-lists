@@ -1,0 +1,9 @@
+{
+  "utterance": "yes",
+  "set_context": {"ExceptionContext": "", "_TestContext": "test"},
+  "intent_type": "SendExceptionIntent",
+  "intent": {
+    "YesKeyword": "yes"
+  },
+  "changed_context": ["ExceptionContext"]
+}

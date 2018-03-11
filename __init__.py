@@ -45,6 +45,8 @@ NOF_TASK_PARAMETER = "nofTask"
 UNDO_CONTEXT = "UndoContext"
 CONFIRM_CONTEXT = "ConfirmContext"
 EXCEPTION_CONTEXT = "ExceptionContext"
+TEST_CONTEXT = "_TestContext"
+
 MAX_TASK_COMPLETE = 40
 
 LOGGER = getLogger(__name__)
@@ -125,10 +127,6 @@ class CowsLists(MycroftSkill):
 
         if error_text:
             return None, None, None, error_text, error_code
-
-        # Workaround the intent parser/adapt cant pass/recognize regex snippet "(my|the)"
-        if str(list_name).startswith('my ') and len(str(list_name)) > 3:
-            list_name = list_name[3:]
 
         # Workaround the intent parser remove the word list: First, try to match to a "list_name list"
         list_name_best_match, significance = process.extractOne(list_name + " list",
@@ -237,12 +235,17 @@ class CowsLists(MycroftSkill):
         self.set_context(EXCEPTION_CONTEXT)
         self.speak_dialog('AskSendException', None, expect_response=True)
 
-    @intent_handler(IntentBuilder("SendExceptionIntent").require("YesKeyword").require(EXCEPTION_CONTEXT).build())
+    @intent_handler(IntentBuilder("SendExceptionIntent").require("YesKeyword").require(EXCEPTION_CONTEXT).optionally(TEST_CONTEXT).build())
     @removes_context(EXCEPTION_CONTEXT)
     @removes_context(UNDO_CONTEXT)
     @removes_context(CONFIRM_CONTEXT)
-    def send_exception_intent(self):
+    def send_exception_intent(self, message):
         try:
+            if message.data.get(TEST_CONTEXT):
+                # Last traceback may not exist if testing
+                LOGGER.info("Testrunner activated send_exception_intent, dont send mail")
+                return
+
             mail_body = "This mail contains details of an exception in the cows lists<br>" \
                         + "Please report the issue at " \
                         + '<a href = "https://github.com/CarstenAgerskov/skill-the-cows-lists/issues">https://github.com/CarstenAgerskov/skill-the-cows-lists/issues</a>' \
@@ -266,7 +269,7 @@ class CowsLists(MycroftSkill):
     @intent_handler(IntentBuilder("AuthenticateIntent").require("AuthenticateKeyword").build())
     @removes_context(UNDO_CONTEXT)
     @removes_context(CONFIRM_CONTEXT)
-    def authenticate_intent(self):
+    def authenticate_intent(self, message):
         try:
             if not self.get_config():
                 return
@@ -301,7 +304,7 @@ class CowsLists(MycroftSkill):
     @intent_handler(IntentBuilder("GetTokenIntent").require("GetTokenKeyword").build())
     @removes_context(UNDO_CONTEXT)
     @removes_context(CONFIRM_CONTEXT)
-    def get_token_intent(self):
+    def get_token_intent(self, message):
         try:
             if not self.get_config():
                 return
@@ -586,7 +589,7 @@ class CowsLists(MycroftSkill):
         except Exception:
             self.speak_exception(traceback.format_exc(), "undo intent")
 
-    @intent_handler(IntentBuilder("ConfirmIntent").require("YesKeyword").require("ConfirmContext").build())
+    @intent_handler(IntentBuilder("ConfirmIntent").require("YesKeyword").require(CONFIRM_CONTEXT).build())
     def confirm_intent(self, message):
         self.remove_context(CONFIRM_CONTEXT)
         try:
@@ -601,7 +604,7 @@ class CowsLists(MycroftSkill):
         IntentBuilder("NoConfirmIntent").require("NoKeyword").one_of(CONFIRM_CONTEXT, EXCEPTION_CONTEXT).build())
     @removes_context(CONFIRM_CONTEXT)
     @removes_context(EXCEPTION_CONTEXT)
-    def no_confirm_intent(self):
+    def no_confirm_intent(self, message):
         self.speak_dialog('NoConfirm')
 
 

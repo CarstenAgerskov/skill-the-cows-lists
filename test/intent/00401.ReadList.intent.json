@@ -1,0 +1,10 @@
+{
+  "utterance": "read the multi word list",
+  "intent_type": "ReadListIntent",
+  "intent": {
+    "listName": "multi word",
+    "ReadListKeyword": "read"
+  },
+  "expected_response": "((There are no tasks on the multi word list)|(List multi word has)|(I cant find a list called multi word)|(I could not read the configuration)|(I am currently not authenticated)|(It seems that you are in the process of authentication)).*"
+
+}

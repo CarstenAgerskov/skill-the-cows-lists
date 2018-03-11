@@ -1,0 +1,10 @@
+{
+  "utterance": "find something on the test list",
+  "intent_type": "FindTaskOnListIntent",
+  "intent": {
+    "taskName": "something",
+    "listName": "test",
+    "FindTaskOnListKeyword": "find"
+  },
+  "expected_response": "((There are no tasks on the test list)|(I found)|(I did not find)|(I could not read the configuration)|(I am currently not authenticated)|(It seems that you are in the process of authentication)).*"
+}

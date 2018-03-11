@@ -1,0 +1,11 @@
+{
+  "utterance": "add several something to list test",
+  "intent_type": "AddTaskToListIntent",
+  "intent": {
+    "taskName": "several something",
+    "listName": "test",
+    "AddTaskToListKeyword": "add"
+  },
+  "expected_response": "((several something was added to list test)|(I cant find a list called)|(I did not find)|(I could not read the configuration)|(I am currently not authenticated)|(It seems that you are in the process of authentication)).*"
+}
+

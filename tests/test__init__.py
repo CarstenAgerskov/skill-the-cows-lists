@@ -42,7 +42,7 @@ class TestOperationInit(unittest.TestCase):
             mock_speak_dialog.assert_called_with('InAuthentication')
 
 
-# @unittest.skip("Skip test missing token")
+#@unittest.skip("Skip test Authenticate")
 class TestAuthenticateIntent(unittest.TestCase):  # assuming a valid token in test.cfg
     @classmethod
     def setUpClass(cls):
@@ -54,8 +54,9 @@ class TestAuthenticateIntent(unittest.TestCase):  # assuming a valid token in te
     def test_token_valid(self):
         with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, \
                 patch('__init__.CowsLists.remove_context') as mock_remove_context:
+            message = Message(self)
             cow_rest.auth_token = None  # Get token from config
-            self.assertFalse(self.cowsLists.authenticate_intent())
+            self.assertFalse(self.cowsLists.authenticate_intent(message))
             mock_speak_dialog.assert_called_with('TokenValid')
             mock_remove_context.assert_called_with(UNDO_CONTEXT)
 
@@ -64,8 +65,9 @@ class TestAuthenticateIntent(unittest.TestCase):  # assuming a valid token in te
                 patch('__init__.CowsLists.remove_context') as mock_remove_context, \
                 patch('__init__.cow_rest.get_token'), \
                 patch('__init__.CowsLists.send_email') as mock_send_email:
+            message = Message(self)
             cow_rest.auth_token = None
-            self.assertFalse(self.cowsLists.authenticate_intent())
+            self.assertFalse(self.cowsLists.authenticate_intent(message))
             mock_speak_dialog.assert_called_with('EmailSent')
             mock_send_email.assert_called_with('Authentication', ANY)
             mock_remove_context.assert_called_with(UNDO_CONTEXT)
@@ -75,14 +77,15 @@ class TestAuthenticateIntent(unittest.TestCase):  # assuming a valid token in te
                 patch('__init__.CowsLists.remove_context') as mock_remove_context, \
                 patch('__init__.cow_rest.get_token'), \
                 patch('__init__.CowsLists.send_email') as mock_send_email:
+            message = Message(self)
             cow_rest.auth_token = "0"
-            self.assertFalse(self.cowsLists.authenticate_intent())
+            self.assertFalse(self.cowsLists.authenticate_intent(message))
             mock_speak_dialog.assert_called_with('EmailSent')
             mock_send_email.assert_called_with('Authentication', ANY)
             mock_remove_context.assert_called_with(UNDO_CONTEXT)
 
 
-# @unittest.skip("Skip GetTokenIntent")
+#@unittest.skip("Skip GetTokenIntent")
 class TestGetTokenIntent(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -94,8 +97,9 @@ class TestGetTokenIntent(unittest.TestCase):
     def test_valid_token(self):
         with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, \
                 patch('__init__.CowsLists.remove_context') as mock_remove_context:
+            message = Message(self)
             cow_rest.auth_token = None  # Get token from config
-            self.cowsLists.get_token_intent()
+            self.cowsLists.get_token_intent(message)
             mock_speak_dialog.assert_called_with('TokenValid')
             mock_remove_context.assert_called_with(UNDO_CONTEXT)
 
@@ -103,9 +107,10 @@ class TestGetTokenIntent(unittest.TestCase):
         with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, \
                 patch('__init__.CowsLists.remove_context') as mock_remove_context, \
                 patch('__init__.cow_rest.get_token'):
+            message = Message(self)
             cow_rest.auth_token = None
             cow_rest.frob = None
-            self.cowsLists.get_token_intent()
+            self.cowsLists.get_token_intent(message)
             mock_speak_dialog.assert_called_with('AuthenticateBeforeToken')
             mock_remove_context.assert_called_with(UNDO_CONTEXT)
 
@@ -113,9 +118,10 @@ class TestGetTokenIntent(unittest.TestCase):
         with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, \
                 patch('__init__.CowsLists.remove_context') as mock_remove_context, \
                 patch('__init__.cow_rest.get_token'):
+            message = Message(self)
             cow_rest.auth_token = "0"
             cow_rest.frob = None
-            self.cowsLists.get_token_intent()
+            self.cowsLists.get_token_intent(message)
             mock_speak_dialog.assert_called_with('AuthenticateBeforeToken')
             mock_remove_context.assert_called_with(UNDO_CONTEXT)
 
@@ -124,10 +130,11 @@ class TestGetTokenIntent(unittest.TestCase):
                 patch('__init__.CowsLists.remove_context') as mock_remove_context, \
                 patch('__init__.cow_rest.get_token'), \
                 patch('__init__.cow_rest.get_new_token') as mock_get_new_token:
+            message = Message(self)
             cow_rest.auth_token = None
             cow_rest.frob = "0"
             mock_get_new_token.return_value = None, None
-            self.cowsLists.get_token_intent()
+            self.cowsLists.get_token_intent(message)
             mock_speak_dialog.assert_called_with("GotToken")
             mock_remove_context.assert_called_with(UNDO_CONTEXT)
 
