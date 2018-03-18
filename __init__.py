@@ -241,7 +241,7 @@ class CowsLists(MycroftSkill):
     @removes_context(EXCEPTION_CONTEXT)
     @removes_context(UNDO_CONTEXT)
     @removes_context(CONFIRM_CONTEXT)
-    def send_exception_intent(self):
+    def send_exception_intent(self, message):
         try:
             mail_body = "This mail contains details of an exception in the cows lists<br>" \
                         + "Please report the issue at " \
@@ -266,7 +266,7 @@ class CowsLists(MycroftSkill):
     @intent_handler(IntentBuilder("AuthenticateIntent").require("AuthenticateKeyword").build())
     @removes_context(UNDO_CONTEXT)
     @removes_context(CONFIRM_CONTEXT)
-    def authenticate_intent(self):
+    def authenticate_intent(self, message):
         try:
             if not self.get_config():
                 return
@@ -301,7 +301,7 @@ class CowsLists(MycroftSkill):
     @intent_handler(IntentBuilder("GetTokenIntent").require("GetTokenKeyword").build())
     @removes_context(UNDO_CONTEXT)
     @removes_context(CONFIRM_CONTEXT)
-    def get_token_intent(self):
+    def get_token_intent(self, message):
         try:
             if not self.get_config():
                 return
