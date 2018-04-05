@@ -1,0 +1,11 @@
+{
+  "utterance": "read list test",
+  "set_context": {"_TestContext": "test"},
+  "remove_context": ["ListContext"],
+  "intent_type": "ReadListIntent",
+  "intent": {
+    "listName": "test",
+    "ReadListKeyword": "read"
+  },
+  "expected_response": "Test context, read list intent: list name test"
+}

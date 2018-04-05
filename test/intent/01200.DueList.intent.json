@@ -1,0 +1,11 @@
+{
+  "utterance": "what is on my test list tomorrow",
+  "set_context": {"_TestContext": "test"},
+  "remove_context": ["ListContext"],
+  "intent_type": "DueOnListIntent",
+  "intent": {
+    "listName": "test",
+    "DueKeyword": "what is on"
+  },
+  "expected_response": "Test context, due on list intent: list name test, due tomorrow"
+}

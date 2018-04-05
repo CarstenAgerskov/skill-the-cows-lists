@@ -1,11 +1,11 @@
 {
   "utterance": "complete something more on my test list",
+  "remove_context": ["ListContext"],
+  "set_context": {"_TestContext": "test"},
   "intent_type": "CompleteTaskOnListIntent",
   "intent": {
-    "taskName": "something more",
     "listName": "test",
     "CompleteTaskOnListKeyword": "complete"
   },
-  "expected_response": "((something on list test list was marked complete)|(.* tasks named something on list test list was marked complete)|(I cant find a list called test)|(I did not find)|(I could not read the configuration)|(I am currently not authenticated)|(It seems that you are in the process of authentication)).*"
-
+  "expected_response": "Test context, complete task on list intent: task name something more, list name test"
 }

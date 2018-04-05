@@ -1,10 +1,8 @@
 {
   "utterance": "find the something on the test list",
-  "remove_context": ["ListContext"],
-  "set_context": {"_TestContext": "test"},
-  "intent_type": "FindTaskOnListIntent",
+  "set_context": {"ListContext": "{\"name\": \"list_name\", \"significance\": \"100\", \"id\": \"123\"}", "_TestContext": "test"},
+  "intent_type": "FindTaskIntent",
   "intent": {
-    "listName": "test",
     "FindTaskOnListKeyword": "find"
   },
   "expected_response": "Test context, find task on list intent: task name the something, list name test"

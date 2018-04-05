@@ -1,2 +1,0 @@
-complete all on (my )?(?P<listName>.+) list$
-complete list (?P<listName>.+)$

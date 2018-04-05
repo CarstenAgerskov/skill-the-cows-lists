@@ -1,9 +1,0 @@
-{
-  "utterance": "read my story list",
-  "intent_type": "ReadListIntent",
-  "intent": {
-    "listName": "story",
-    "ReadListKeyword": "read"
-  },
-  "expected_response": "((There are no tasks on the story list)|(List story list has)|(I cant find a list called story)|(I could not read the configuration)|(I am currently not authenticated)|(It seems that you are in the process of authentication)).*"
-}

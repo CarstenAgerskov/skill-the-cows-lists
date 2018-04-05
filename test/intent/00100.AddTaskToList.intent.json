@@ -1,8 +1,8 @@
 {
   "utterance": "add something to the test list",
+  "remove_context": ["ListContext"],
   "intent_type": "AddTaskToListIntent",
   "intent": {
-    "taskName": "something",
     "listName": "test",
     "AddTaskToListKeyword": "add"
   },

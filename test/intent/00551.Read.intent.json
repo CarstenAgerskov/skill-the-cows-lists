@@ -1,0 +1,9 @@
+{
+  "utterance": "read the test list",
+  "set_context": {"ListContext": "{\"name\": \"list_name\", \"significance\": \"100\", \"id\": \"123\"}", "_TestContext": "test"},
+  "intent_type": "ReadIntent",
+  "intent": {
+    "ReadListKeyword": "read"
+  },
+  "expected_response": "Test context, read list intent: list name test"
+}

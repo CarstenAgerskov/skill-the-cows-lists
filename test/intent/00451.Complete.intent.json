@@ -1,0 +1,9 @@
+{
+  "utterance": "complete all tasks on the test list",
+  "set_context": {"ListContext": "{\"name\": \"list_name\", \"significance\": \"100\", \"id\": \"123\"}", "_TestContext": "test"},
+  "intent_type": "CompleteTaskIntent",
+  "intent": {
+    "CompleteTaskOnListKeyword": "complete"
+  },
+  "expected_response": "Test context, complete list intent: list name test"
+}

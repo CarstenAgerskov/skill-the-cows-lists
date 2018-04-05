@@ -1,5 +1,5 @@
 {
-  "utterance": "complete the something on the test list",
+  "utterance": "complete all tasks on the test list",
   "remove_context": ["ListContext"],
   "set_context": {"_TestContext": "test"},
   "intent_type": "CompleteTaskOnListIntent",
@@ -7,5 +7,5 @@
     "listName": "test",
     "CompleteTaskOnListKeyword": "complete"
   },
-  "expected_response": "Test context, complete task on list intent: task name the something, list name test"
+  "expected_response": "Test context, complete list intent: list name test"
 }
