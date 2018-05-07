@@ -13,7 +13,17 @@ TEXT_LOGIN_FAILED = "Login failed / Invalid auth token"
 CODE_LOGIN_FAILED = "98"
 
 
-@unittest.skipIf(AUTH_TEST, "Skip error test")
+# Disable unit test, needs to work with both nose, unittest etc.
+def ut_disabled(func):
+    def wrapper(func):
+        if os.environ.get('ENABLE_COWS_TESTS', False):
+            func.__test__ = False
+        return func
+
+    return wrapper
+
+#@unittest.skipIf(AUTH_TEST, "Skip error test")
+@ut_disabled
 class TestErrorReport(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -71,7 +81,8 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(transaction_id, None)
 
 
-@unittest.skipIf(AUTH_TEST, "Skip operation test")
+#@unittest.skipIf(AUTH_TEST, "Skip operation test")
+@ut_disabled
 class TestOperations(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -155,7 +166,8 @@ class TestOperations(unittest.TestCase):
         self.assertEqual(task_match, None)  # assuming RTM make unique tasks
 
 
-@unittest.skipUnless(AUTH_TEST, "skip auth test")
+#@unittest.skipUnless(AUTH_TEST, "skip auth test")
+@ut_disabled
 class TestAuto(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
