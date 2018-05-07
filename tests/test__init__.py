@@ -7,8 +7,6 @@ import os
 from mock import patch, ANY
 from mycroft.messagebus.message import Message
 from __init__ import CowsLists
-from collections import namedtuple
-from nose.tools import nottest
 
 TASK_PARAMETER = "taskName"
 LIST_PARAMETER = "listName"
