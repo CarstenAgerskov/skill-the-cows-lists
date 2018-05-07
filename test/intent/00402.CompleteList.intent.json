@@ -4,7 +4,6 @@
   "set_context": {"_TestContext": "test"},
   "intent_type": "CompleteTaskOnListIntent",
   "intent": {
-    "listName": "test list",
     "CompleteTaskOnListKeyword": "complete"
   },
   "expected_response": "Test context, complete list intent: list name test"
