@@ -28,6 +28,7 @@ from mycroft import removes_context
 from mycroft.skills.core import MycroftSkill
 from mycroft.skills.core import intent_handler
 from mycroft.util.log import getLogger
+from importlib import reload
 
 HOME_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(HOME_DIR)
@@ -76,8 +77,9 @@ class CowsLists(MycroftSkill):
             open(HOME_DIR + '/regex/' + self.lang + '/LocalRegex.json', 'r')
                 .read())
 
-        for key, value in local_regex.iteritems():
-            self.local_regex.update({key: map(lambda v: re.compile(v), value)})
+        for key, value in local_regex.items():
+            self.local_regex.update({key: [re.compile(v) for v in value]})
+
 
     def get_config(self):
         if cow_rest.api_key and cow_rest.secret:
@@ -203,18 +205,17 @@ class CowsLists(MycroftSkill):
         # match to a "list_name list"
         list_name_best_match, significance = (
             process.extractOne(list_name + " list",
-                               map(lambda x: str(x['name']).lower(),
+                               map(lambda x: x['name'].lower(),
                                    list_result)))
         # Then try to match to "list_name"
         if significance < 100:
             list_name_best_match, significance = (
                 process.extractOne(list_name,
-                                   map(lambda x: str(x['name']).lower(),
+                                   map(lambda x: x['name'].lower(),
                                        list_result)))
 
-        list_id = filter(
-            lambda x: str(x['name']).lower() == list_name_best_match,
-            list_result)[0]['id']
+        list_id = [x for x in list_result if x['name'].lower() ==
+                   list_name_best_match][0]['id']
 
         self.set_context(LIST_CONTEXT,
                          json.dumps({'id': list_id,
@@ -260,15 +261,14 @@ class CowsLists(MycroftSkill):
                                    list_best_match, None, None)
 
         task_name_best_match, significance = (
-            process.extractOne(task_name,
-                               map(lambda x: str(x['task_name']).lower(),
-                                   flat_task_list)))
+            process.extractOne(task_name, map(lambda x: x['task_name'].lower(),
+                                              flat_task_list)))
 
         # There may be several tasks with the same task_name_best_match,
         # selected_task_list holds all
-        selected_task_list = filter(
-            lambda x: str(x['task_name']).lower() == task_name_best_match,
-            flat_task_list)
+        selected_task_list = [x for x in flat_task_list
+                              if x['task_name'].lower() ==
+                              task_name_best_match]
 
         task_list_tuple = TASK_LIST_TUPLE(task_name_best_match,
                                           selected_task_list[0]['task_id'],
@@ -346,7 +346,8 @@ class CowsLists(MycroftSkill):
         if additional_dialog:
             additional_dialog()
 
-        map(lambda x: self.speak(x['task_name']), flat_task_list)
+        for x in flat_task_list:
+            self.speak(x['task_name'])
 
     def complete_task_on_list_explain(self, task_name, list_name,
                                       list_best_match=None):
@@ -635,7 +636,7 @@ class CowsLists(MycroftSkill):
             if message.data.get(TEST_CONTEXT):
                 self.speak(
                     "Test context, add task intent: task name " + task_name +
-                    ", list name " + str(list_tuple.name))
+                    ", list name " + list_tuple.name)
                 return
 
             self.remove_context(UNDO_CONTEXT)
@@ -727,7 +728,7 @@ class CowsLists(MycroftSkill):
             if message.data.get(TEST_CONTEXT):
                 self.speak(
                     "Test context, find task intent: task name "
-                    + task_name + ", list name " + str(list_tuple.name))
+                    + task_name + ", list name " + list_tuple.name)
                 return
 
             if not self.operation_init():
@@ -826,7 +827,7 @@ class CowsLists(MycroftSkill):
             if message.data.get(TEST_CONTEXT):
                 self.speak(
                     "Test context, complete task intent: task name " +
-                    task_name + ", list name " + str(list_tuple.name))
+                    task_name + ", list name " + list_tuple.name)
                 return
 
             if not self.operation_init():
@@ -903,7 +904,7 @@ class CowsLists(MycroftSkill):
             if message.data.get(TEST_CONTEXT):
                 self.speak(
                     "Test context, complete intent: list name " +
-                    str(list_tuple.name))
+                    list_tuple.name)
                 return
 
             if not self.operation_init():
@@ -936,7 +937,7 @@ class CowsLists(MycroftSkill):
             if message.data.get(TEST_CONTEXT):
                 self.speak(
                     "Test context, complete list intent: list name " +
-                    str(list_name))
+                    list_name)
                 return
 
             if not self.operation_init():
@@ -970,8 +971,7 @@ class CowsLists(MycroftSkill):
 
             if message.data.get(TEST_CONTEXT):
                 self.speak(
-                    "Test context, read intent: list name " + str(
-                        list_tuple.name))
+                    "Test context, read intent: list name " + list_tuple.name)
                 return
 
             if not self.operation_init():
@@ -1000,8 +1000,7 @@ class CowsLists(MycroftSkill):
 
             if message.data.get(TEST_CONTEXT):
                 self.speak(
-                    "Test context, read list intent: list name " + str(
-                        list_name))
+                    "Test context, read list intent: list name " + list_name)
                 return
 
             if not self.operation_init():
@@ -1044,7 +1043,7 @@ class CowsLists(MycroftSkill):
             if message.data.get(TEST_CONTEXT):
                 self.speak(
                     "Test context, due intent: list name " +
-                    str(list_tuple.name) + ", due " + due)
+                    list_tuple.name + ", due " + due)
                 return
 
             if not self.operation_init():
@@ -1079,7 +1078,7 @@ class CowsLists(MycroftSkill):
             if message.data.get(TEST_CONTEXT):
                 self.speak(
                     "Test context, due on list intent: list name " +
-                    str(list_name) + ", due " + due)
+                    list_name + ", due " + due)
                 return
 
             if not self.operation_init():
@@ -1107,7 +1106,7 @@ class CowsLists(MycroftSkill):
     def undo_intent(self, message):
         try:
             c = json.loads(message.data.get(UNDO_CONTEXT))
-            if str(c['dialog']) == "AddTaskToListUndo":
+            if c['dialog'] == "AddTaskToListUndo":
                 transaction_id, error_text, error_code = cow_rest.delete_task(
                     c['task']['task_id'],
                     c['task']["taskseries_id"],

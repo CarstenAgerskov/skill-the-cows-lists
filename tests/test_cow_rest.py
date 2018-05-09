@@ -1,35 +1,34 @@
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import input
+from builtins import filter
+from builtins import str
 import unittest
 import cow_rest
-import ConfigParser
+import configparser
 import uuid
+import os
+from pathlib import Path
 
 AUTH_TEST = False
 
-config = ConfigParser.ConfigParser()
-
+config = configparser.ConfigParser()
 CONFIG_FILE = "test.cfg"
+config_file_path = Path(CONFIG_FILE)
 
 TEXT_LOGIN_FAILED = "Login failed / Invalid auth token"
 CODE_LOGIN_FAILED = "98"
 
 
-# Disable unit test, needs to work with both nose, unittest etc.
-def ut_disabled(func):
-    def wrapper(func):
-        if os.environ.get('ENABLE_COWS_TESTS', False):
-            func.__test__ = False
-        return func
-
-    return wrapper
-
-#@unittest.skipIf(AUTH_TEST, "Skip error test")
-@ut_disabled
+@unittest.skipIf(not config_file_path.is_file(), "Skip due to no config file")
 class TestErrorReport(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        config.read(CONFIG_FILE)
-        cow_rest.api_key = config.get('auth', 'api_key')
-        cow_rest.secret = config.get('auth', 'secret')
+        if config_file_path.is_file():
+            config.read(CONFIG_FILE)
+            cow_rest.api_key = config.get('auth', 'api_key')
+            cow_rest.secret = config.get('auth', 'secret')
         cow_rest.auth_token = "hello"
 
     def test_get_list(self):
@@ -81,19 +80,19 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(transaction_id, None)
 
 
-#@unittest.skipIf(AUTH_TEST, "Skip operation test")
-@ut_disabled
+@unittest.skipIf(not config_file_path.is_file(),"Skip due to no config file")
 class TestOperations(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        config.read(CONFIG_FILE)
-        cow_rest.api_key = config.get('auth', 'api_key')
-        cow_rest.secret = config.get('auth', 'secret')
+        if config_file_path.is_file():
+            config.read(CONFIG_FILE)
+            cow_rest.api_key = config.get('auth', 'api_key')
+            cow_rest.secret = config.get('auth', 'secret')
         cow_rest.auth_token = None
 
     def test_add_remove_item_to_list(self):
         task_name = "Cows Lists test item: " + str(uuid.uuid1())
-        print "Working on item:" + task_name
+        print("Working on item:" + task_name)
 
         cow_rest.get_token(cow_rest)
         self.assertNotEqual(cow_rest.auth_token, None)
@@ -109,7 +108,7 @@ class TestOperations(unittest.TestCase):
         list_result, error_text, error_code = cow_rest.get_list()
         self.assertEqual(error_text, None)
 
-        list_id = filter(lambda x: str(x['name']).lower() == "inbox", list_result)[0]['id']
+        list_id = [x for x in list_result if str(x['name']).lower() == "inbox"][0]['id']
 
         # add an item
         taskseries_id, task_id, error_text, error_code = cow_rest.add_task(task_name, list_id)
@@ -126,9 +125,9 @@ class TestOperations(unittest.TestCase):
 
         # check flat list
         flat_task_list = cow_rest.flat_task_list(task_list)
-        self.assertTrue(len(filter(lambda x: x['task_name'] == task_name
+        self.assertTrue(len([x for x in flat_task_list if x['task_name'] == task_name
                                              and x['taskseries_id'] == taskseries_id
-                                             and x['task_id'] == task_id ,flat_task_list)) > 0)
+                                             and x['task_id'] == task_id]) > 0)
 
         # mark task as complete
         transaction_id, error_text, error_code = cow_rest.complete_task(task_id, taskseries_id, list_id)
@@ -166,14 +165,14 @@ class TestOperations(unittest.TestCase):
         self.assertEqual(task_match, None)  # assuming RTM make unique tasks
 
 
-#@unittest.skipUnless(AUTH_TEST, "skip auth test")
-@ut_disabled
-class TestAuto(unittest.TestCase):
+@unittest.skipIf(not config_file_path.is_file() or not AUTH_TEST,"Skip due to no config file")
+class TestAuth(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        config.read(CONFIG_FILE)
-        cow_rest.api_key = config.get('auth', 'api_key')
-        cow_rest.secret = config.get('auth', 'secret')
+        if config_file_path.is_file():
+            config.read(CONFIG_FILE)
+            cow_rest.api_key = config.get('auth', 'api_key')
+            cow_rest.secret = config.get('auth', 'secret')
         cow_rest.auth_token = None
 
     def test_auth(self):
@@ -182,10 +181,10 @@ class TestAuto(unittest.TestCase):
         self.assertEqual(error_code, None)
 
         auth_url = cow_rest.get_auth_url()
-        print "Authentication link"
-        print auth_url
-        print "Copy/paste URL then hit return"
-        raw_input()
+        print("Authentication link")
+        print(auth_url)
+        print("Copy/paste URL then hit return")
+        input()
 
         error_text, error_code = cow_rest.get_new_token(cow_rest)
 

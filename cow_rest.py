@@ -17,10 +17,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from hashlib import md5
-from urllib2 import urlopen
+from urllib.request import urlopen, quote
 import urllib
 import json
-import ConfigParser
+import configparser
 import os
 
 __author__ = 'cagerskov'
@@ -31,7 +31,7 @@ AUTH_URL = "https://www.rememberthemilk.com/services/auth/"
 HOME_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = HOME_DIR + "/cowslist.cfg"
 
-config = ConfigParser.ConfigParser()
+config = configparser.ConfigParser()
 
 api_key = None
 secret = None
@@ -50,12 +50,12 @@ class RtmRest:
 
     def get_param_string(self):
         self.param.sort()
-        return '?' + ''.join(map((lambda x: x[0] + '=' + urllib.quote(x[1].encode('utf8')) + '&'), self.param)) \
-               + 'api_sig=' + md5(secret + ''.join(map((lambda x: x[0] + x[1]), self.param))).hexdigest()
+        return '?' + ''.join(map((lambda x: x[0] + '=' + quote(x[1].encode('utf8')) + '&'), self.param)) \
+               + 'api_sig=' + md5((secret + ''.join(map((lambda x: x[0] + x[1]), self.param))).encode('utf8')).hexdigest()
 
     def call(self):
         s = urlopen(RTM_URL + self.get_param_string())
-        response = json.load(s)
+        response = json.loads(s.read().decode())
         s.close()
         return response
 
@@ -83,16 +83,16 @@ def find_task_id(task_list, taskseries_id, task_id):
             if taskseries['taskseries']['id'] == taskseries_id:
                 taskseries_match = taskseries['taskseries']
         else:
-            taskseries_match = filter(lambda x: x['id'] == taskseries_id, taskseries['taskseries'])
+            taskseries_match = [x for x in taskseries['taskseries'] if x['id'] == taskseries_id]
 
     if not taskseries_match:
         return None
 
     if not isinstance(taskseries_match, list):
-        task_match = filter(lambda x: x['id'] == task_id, taskseries_match['task'])
+        task_match = [x for x in taskseries_match['task'] if x['id'] == task_id]
     else:
         for task in taskseries_match:
-            task_match = filter(lambda x: x['id'] == task_id, task['task'])
+            task_match = [x for x in task['task'] if x['id'] == task_id]
 
     return task_match
 
@@ -106,18 +106,21 @@ def flat_task_list(task_list):
         if isinstance(taskseries['taskseries'], list):
             for t in taskseries['taskseries']:
                 if isinstance(t['task'], list):
-                    map(lambda x: flat_task.append({'task_name': t['name'],
-                                                'taskseries_id': t['id'],
-                                                'task_id': x['id']}), t['task'])
+                    for x in t['task']:
+                        flat_task.append({'task_name': t['name'],
+                                          'taskseries_id': t['id'],
+                                          'task_id': x['id']})
                 else:
                     flat_task.append({'task_name': t['name'],
                                       'taskseries_id': t['id'],
                                       'task_id' : t['task']['id']})
         else:
             if isinstance(taskseries['taskseries']['task'], list):
-                map(lambda x: flat_task.append({'task_name': taskseries['taskseries']['name'],
-                                                'taskseries_id': taskseries['taskseries']['id'],
-                                                'task_id': x['id']}), taskseries['taskseries']['task'])
+                for x in taskseries['taskseries']['task']:
+                    flat_task.append(
+                        {'task_name': taskseries['taskseries']['name'],
+                         'taskseries_id': taskseries['taskseries']['id'],
+                         'task_id': x['id']})
             else:
                 flat_task.append({ 'task_name': taskseries['taskseries']['name'],
                                'taskseries_id': taskseries['taskseries']['id'],
@@ -148,7 +151,7 @@ def get_new_token(self):
         config.add_section('auth')
 
     config.set('auth', 'auth_token', response['rsp']['auth']['token'])
-    with open(CONFIG_FILE, 'wb') as configfile:
+    with open(CONFIG_FILE, 'w') as configfile:
         config.write(configfile)
 
     self.auth_token = response['rsp']['auth']['token']
@@ -194,8 +197,8 @@ def get_frob(self):
 
 def get_auth_url():
     return AUTH_URL + '?api_key=' + str(api_key) + '&perms=delete&frob=' + str(frob) \
-           + '&api_sig=' + md5(secret + 'api_key' + api_key + 'frob'
-                               + frob + 'permsdelete').hexdigest()
+           + '&api_sig=' + md5((secret + 'api_key' + api_key + 'frob'
+                               + frob + 'permsdelete').encode('utf8')).hexdigest()
 
 
 def get_list():

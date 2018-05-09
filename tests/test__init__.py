@@ -1,12 +1,18 @@
-import ConfigParser
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+import configparser
 import json
 import unittest
 import uuid
 import cow_rest
 import os
-from mock import patch, ANY
+from unittest.mock import patch, ANY
 from mycroft.messagebus.message import Message
 from __init__ import CowsLists
+from pathlib import Path
 
 TASK_PARAMETER = "taskName"
 LIST_PARAMETER = "listName"
@@ -25,19 +31,11 @@ REPEAT_ADD_TASK_CONTEXT = "RepeatAddTaskContext"
 TEST_CONTEXT = "_TestContext"
 MAX_TASK_COMPLETE = 40
 
-config = ConfigParser.ConfigParser()
+config = configparser.ConfigParser()
 
 CONFIG_FILE = "test.cfg"
 LANGUAGE = "en-us"
-
-# Disable unit test, needs to work with both nose, unittest etc.
-def ut_disabled(func):
-    def wrapper(func):
-        if os.environ.get('ENABLE_COWS_TESTS', False):
-            func.__test__ = False
-        return func
-
-    return wrapper
+config_file_path = Path(CONFIG_FILE)
 
 
 def add_task_to_list(self, task_name, list_tuple):
@@ -89,16 +87,12 @@ def find_task_on_list(self, task_name, list_name, match=False, no_match=False):
 
 def mock_call_sequence(self, verify_mock, dialog_sequence):
     seq=[]
-    seq = map(lambda y: y[1][0],
-              filter(lambda x: x[0] != '__str__', verify_mock.mock_calls))
+    seq = [y[1][0] for y in [x for x in verify_mock.mock_calls if x[0] != '__str__']]
     self.assertEqual(dialog_sequence, seq)
-    print "Call sequence verified for " + str(verify_mock) + ": " + str(seq)
+    print("Call sequence verified for " + str(verify_mock) + ": " + str(seq))
 
 def get_mock_call_parameters(self, param_mock, first_param):
-    s = filter(lambda z: z[0] == first_param,
-               map(lambda y: y[1],
-                   filter(lambda x: x[0] != '__str__',
-                          param_mock.mock_calls)))
+    s = [z for z in [y[1] for y in [x for x in param_mock.mock_calls if x[0] != '__str__']] if z[0] == first_param]
     return s[0][1]
 
 def set_list_context(self, message, list_best_match):
@@ -119,14 +113,15 @@ def add_task_to_list_by_name(self, list_name, task_name):
     list_best_match = find_list(self, list_name)
     add_task_to_list(self, task_name, list_best_match)
 
-@ut_disabled
+@unittest.skipIf(not config_file_path.is_file(),"Skip due to no config file")
 class TestFunctions(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
-        config.read(CONFIG_FILE)
-        cow_rest.api_key = config.get('auth', 'api_key')
-        cow_rest.secret = config.get('auth', 'secret')
+        if config_file_path.is_file():
+            config.read(CONFIG_FILE)
+            cow_rest.api_key = config.get('auth', 'api_key')
+            cow_rest.secret = config.get('auth', 'secret')
         cls.cowsLists.vocab_dir = cls.cowsLists._dir + "/vocab/" + cls.cowsLists.lang
         cls.cowsLists.initialize()
 
@@ -143,14 +138,15 @@ class TestFunctions(unittest.TestCase):
 
 
 #@unittest.skip("Skip TestOperationInit")
-@ut_disabled
+@unittest.skipIf(not config_file_path.is_file(),"Skip due to no config file")
 class TestOperationInit(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
-        config.read(CONFIG_FILE)
-        cow_rest.api_key = config.get('auth', 'api_key')
-        cow_rest.secret = config.get('auth', 'secret')
+        if config_file_path.is_file():
+            config.read(CONFIG_FILE)
+            cow_rest.api_key = config.get('auth', 'api_key')
+            cow_rest.secret = config.get('auth', 'secret')
 
     def test_operation_init(self):
         with patch('__init__.cow_rest.get_token'), \
@@ -169,14 +165,15 @@ class TestOperationInit(unittest.TestCase):
 
 
 #@unittest.skip("Skip TestAuthenticateIntent")
-@ut_disabled
+@unittest.skipIf(not config_file_path.is_file(),"Skip due to no config file")
 class TestAuthenticateIntent(unittest.TestCase):  # assuming a valid token in test.cfg
     @classmethod
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
-        config.read(CONFIG_FILE)
-        cow_rest.api_key = config.get('auth', 'api_key')
-        cow_rest.secret = config.get('auth', 'secret')
+        if config_file_path.is_file():
+            config.read(CONFIG_FILE)
+            cow_rest.api_key = config.get('auth', 'api_key')
+            cow_rest.secret = config.get('auth', 'secret')
 
     def test_token_valid(self):
         with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, \
@@ -213,14 +210,15 @@ class TestAuthenticateIntent(unittest.TestCase):  # assuming a valid token in te
 
 
 #@unittest.skip("Skip GetTokenIntent")
-@ut_disabled
+@unittest.skipIf(not config_file_path.is_file(),"Skip due to no config file")
 class TestGetTokenIntent(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
-        config.read(CONFIG_FILE)
-        cow_rest.api_key = config.get('auth', 'api_key')
-        cow_rest.secret = config.get('auth', 'secret')
+        if config_file_path.is_file():
+            config.read(CONFIG_FILE)
+            cow_rest.api_key = config.get('auth', 'api_key')
+            cow_rest.secret = config.get('auth', 'secret')
 
     def test_valid_token(self):
         with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, \
@@ -268,14 +266,15 @@ class TestGetTokenIntent(unittest.TestCase):
 
 
 #@unittest.skip("Skip TestAddTaskToList")
-@ut_disabled
+@unittest.skipIf(not config_file_path.is_file(),"Skip due to no config file")
 class TestAddTaskToList(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
-        config.read(CONFIG_FILE)
-        cow_rest.api_key = config.get('auth', 'api_key')
-        cow_rest.secret = config.get('auth', 'secret')
+        if config_file_path.is_file():
+            config.read(CONFIG_FILE)
+            cow_rest.api_key = config.get('auth', 'api_key')
+            cow_rest.secret = config.get('auth', 'secret')
         cls.cowsLists.vocab_dir = cls.cowsLists._dir + "/vocab/" + cls.cowsLists.lang
         cls.cowsLists.initialize()
 
@@ -283,12 +282,12 @@ class TestAddTaskToList(unittest.TestCase):
         # Set up interface
         operation_init(self)
 
-        print "Clear the list"
+        print("Clear the list")
         list_name = 'test list'
         list_best_match = find_list(self, list_name, match=True)
         complete_list_explain(self, list_best_match.name, list_best_match)
 
-        print "Add one task to an empty list"
+        print("Add one task to an empty list")
         with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, \
                 patch('__init__.CowsLists.remove_context') as mock_remove_context, \
                 patch('__init__.CowsLists.set_context') as mock_set_context:
@@ -311,7 +310,7 @@ class TestAddTaskToList(unittest.TestCase):
             task_best_match = json.loads(get_mock_call_parameters(self, mock_set_context, TASK_CONTEXT))
             self.assertEqual(task_name_1, str(task_best_match['name']))
 
-            print "Add one taks to a nonempty list, list names do not match"
+            print("Add one taks to a nonempty list, list names do not match")
             mock_speak_dialog.reset_mock()
             mock_remove_context.reset_mock()
             mock_set_context.reset_mock()
@@ -319,7 +318,8 @@ class TestAddTaskToList(unittest.TestCase):
             task_name_2 = "test item: " + str(uuid.uuid1())
             message.data.setdefault(TASK_PARAMETER, task_name_2)
             message.data.setdefault(LIST_PARAMETER, list_name+'x')
-            message.data.setdefault('utterance', 'add ' + task_name_2 + ' to my ' + list_name + 'x list')
+            message.data.setdefault('utterance', 'add ' + task_name_2 +
+                                    ' to my ' + list_name + 'x list')
             with patch('__init__.CowsLists.get_response', return_value='yes') as mock_get_response:
                 self.cowsLists.add_task_to_list_intent(message)
 
@@ -330,11 +330,11 @@ class TestAddTaskToList(unittest.TestCase):
             list_context_param = get_mock_call_parameters(self, mock_set_context, LIST_CONTEXT)
             undo_context_param = get_mock_call_parameters(self, mock_set_context, UNDO_CONTEXT)
 
-            print "Test that the tasks are actually there"
+            print("Test that the tasks are actually there")
             find_task_on_list(self, task_name_1, list_name, match=True)
             find_task_on_list(self, task_name_2, list_name, match=True)
 
-            print "Undo, remove last task"
+            print("Undo, remove last task")
             mock_speak_dialog.reset_mock()
             mock_remove_context.reset_mock()
             mock_set_context.reset_mock()
@@ -347,7 +347,7 @@ class TestAddTaskToList(unittest.TestCase):
             mock_call_sequence(self, mock_speak_dialog, ['AddTaskToListUndo'])
             find_task_on_list(self, task_name_2, list_name, no_match=True)
 
-            print "Add task in list context"
+            print("Add task in list context")
             mock_speak_dialog.reset_mock()
             mock_remove_context.reset_mock()
             mock_set_context.reset_mock()
@@ -368,12 +368,12 @@ class TestAddTaskToList(unittest.TestCase):
             mock_call_sequence(self, mock_get_response, ['AnythingElse', 'AnythingElse'])
             mock_call_sequence(self, mock_speak_dialog, ['AnythingElseEnd'])
 
-            print "Test that the tasks are actually there"
+            print("Test that the tasks are actually there")
             find_task_on_list(self, task_name_1, list_name, match=True)
             find_task_on_list(self, task_name_2, list_name, match=True)
             find_task_on_list(self, task_name_3, list_name, match=True)
 
-            print "Add task in list context, with matching list"
+            print("Add task in list context, with matching list")
             mock_speak_dialog.reset_mock()
             mock_remove_context.reset_mock()
             mock_set_context.reset_mock()
@@ -393,7 +393,7 @@ class TestAddTaskToList(unittest.TestCase):
             mock_call_sequence(self, mock_get_response, ['AnythingElse'])
             mock_call_sequence(self, mock_speak_dialog, ['AnythingElseEnd'])
 
-            print "Add list in list context, with different list"
+            print("Add list in list context, with different list")
             mock_speak_dialog.reset_mock()
             mock_remove_context.reset_mock()
             mock_set_context.reset_mock()
@@ -411,7 +411,7 @@ class TestAddTaskToList(unittest.TestCase):
                                [LIST_CONTEXT, UNDO_CONTEXT, TASK_CONTEXT])
             mock_call_sequence(self, mock_speak_dialog, ['AddTaskToList'])
 
-            print "undo add to inbox list"
+            print("undo add to inbox list")
             undo_context_param = get_mock_call_parameters(self, mock_set_context, UNDO_CONTEXT)
             message = Message(self)
             message.data.setdefault(UNDO_CONTEXT, undo_context_param)
@@ -419,14 +419,15 @@ class TestAddTaskToList(unittest.TestCase):
 
 
 #@unittest.skip("Skip TestFindTask")
-@ut_disabled
+@unittest.skipIf(not config_file_path.is_file(),"Skip due to no config file")
 class TestFindTask(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
-        config.read(CONFIG_FILE)
-        cow_rest.api_key = config.get('auth', 'api_key')
-        cow_rest.secret = config.get('auth', 'secret')
+        if config_file_path.is_file():
+            config.read(CONFIG_FILE)
+            cow_rest.api_key = config.get('auth', 'api_key')
+            cow_rest.secret = config.get('auth', 'secret')
         cls.task_name_1 = 'Cows Lists test item: ' + str(uuid.uuid1())
         cls.task_name_2 = 'Cows Lists test item: ' + str(uuid.uuid1())
         cls.list_name = 'test list'
@@ -438,11 +439,11 @@ class TestFindTask(unittest.TestCase):
         # Set up interface
         operation_init(self)
 
-        print "Clear the list"
+        print("Clear the list")
         list_best_match = find_list(self, self.list_name, match=True)
         complete_list_explain(self, list_best_match.name, list_best_match)
 
-        print "Add test tasks"
+        print("Add test tasks")
         add_task_to_list_by_name(self, self.list_name, self.task_name_1 )
         add_task_to_list_by_name(self, self.list_name, self.task_name_2 )
 
@@ -469,11 +470,11 @@ class TestFindTask(unittest.TestCase):
         # Set up interface
         operation_init(self)
 
-        print "Clear the list"
+        print("Clear the list")
         list_best_match = find_list(self, self.list_name, match=True)
         complete_list_explain(self, list_best_match.name, list_best_match)
 
-        print "Add test tasks"
+        print("Add test tasks")
         add_task_to_list_by_name(self, self.list_name, self.task_name_1 )
         add_task_to_list_by_name(self, self.list_name, self.task_name_2 )
 
@@ -499,14 +500,15 @@ class TestFindTask(unittest.TestCase):
             mock_call_sequence(self, mock_get_response, ['UsingAnotherList'])
 
 #@unittest.skip("Skip TestFindTaskOnList")
-@ut_disabled
+@unittest.skipIf(not config_file_path.is_file(),"Skip due to no config file")
 class TestFindTaskOnList(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
-        config.read(CONFIG_FILE)
-        cow_rest.api_key = config.get('auth', 'api_key')
-        cow_rest.secret = config.get('auth', 'secret')
+        if config_file_path.is_file():
+            config.read(CONFIG_FILE)
+            cow_rest.api_key = config.get('auth', 'api_key')
+            cow_rest.secret = config.get('auth', 'secret')
         cls.task_name_1 = 'Cows Lists test item: ' + str(uuid.uuid1())
         cls.task_name_2 = 'Cows Lists test item: ' + str(uuid.uuid1())
         cls.list_name = 'test list'
@@ -587,14 +589,15 @@ class TestFindTaskOnList(unittest.TestCase):
 
 
 #@unittest.skip("Skip CompleteTaskOnList")
-@ut_disabled
+@unittest.skipIf(not config_file_path.is_file(),"Skip due to no config file")
 class CompleteTaskOnList(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
-        config.read(CONFIG_FILE)
-        cow_rest.api_key = config.get('auth', 'api_key')
-        cow_rest.secret = config.get('auth', 'secret')
+        if config_file_path.is_file():
+            config.read(CONFIG_FILE)
+            cow_rest.api_key = config.get('auth', 'api_key')
+            cow_rest.secret = config.get('auth', 'secret')
         cls.task_name_1 = 'cows lists test item: ' + str(uuid.uuid1())
         cls.task_name_2 = 'cows lists test item: ' + str(uuid.uuid1())
         cls.list_name = 'test list'
@@ -647,10 +650,10 @@ class CompleteTaskOnList(unittest.TestCase):
 
             undo_context_param = get_mock_call_parameters(self, mock_set_context, UNDO_CONTEXT)
 
-            print "Test that the tasks is removed"
+            print("Test that the tasks is removed")
             find_task_on_list(self, self.task_name_1, self.list_name, no_match=True)
 
-            print "Undo, restore last task"
+            print("Undo, restore last task")
             mock_speak_dialog.reset_mock()
             mock_remove_context.reset_mock()
             mock_set_context.reset_mock()
@@ -662,7 +665,7 @@ class CompleteTaskOnList(unittest.TestCase):
             mock_remove_context.assert_called_with(UNDO_CONTEXT)
             mock_call_sequence(self, mock_speak_dialog, ['CompleteTaskOnListUndo'])
 
-            print "Test that the tasks is restored"
+            print("Test that the tasks is restored")
             find_task_on_list(self, self.task_name_1, self.list_name, match=True)
 
 
@@ -690,10 +693,10 @@ class CompleteTaskOnList(unittest.TestCase):
 
             undo_context_param = get_mock_call_parameters(self, mock_set_context, UNDO_CONTEXT)
 
-            print "Test that the tasks is removed"
+            print("Test that the tasks is removed")
             find_task_on_list(self, self.task_name_1, self.list_name, no_match=True)
 
-            print "Undo, restore last task"
+            print("Undo, restore last task")
             mock_speak_dialog.reset_mock()
             mock_remove_context.reset_mock()
             mock_set_context.reset_mock()
@@ -705,19 +708,20 @@ class CompleteTaskOnList(unittest.TestCase):
             mock_remove_context.assert_called_with(UNDO_CONTEXT)
             mock_call_sequence(self, mock_speak_dialog, ['CompleteTaskOnListUndo'])
 
-            print "Test that the tasks is restored"
+            print("Test that the tasks is restored")
             find_task_on_list(self, self.task_name_1, self.list_name, match=True)
 
 
 #@unittest.skip("Skip CompleteTask")
-@ut_disabled
+@unittest.skipIf(not config_file_path.is_file(),"Skip due to no config file")
 class CompleteTask(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
-        config.read(CONFIG_FILE)
-        cow_rest.api_key = config.get('auth', 'api_key')
-        cow_rest.secret = config.get('auth', 'secret')
+        if config_file_path.is_file():
+            config.read(CONFIG_FILE)
+            cow_rest.api_key = config.get('auth', 'api_key')
+            cow_rest.secret = config.get('auth', 'secret')
         cls.task_name_1 = 'cows lists test item: ' + str(uuid.uuid1())
         cls.task_name_2 = 'cows lists test item: ' + str(uuid.uuid1())
         cls.list_name = 'test list'
@@ -773,7 +777,7 @@ class CompleteTask(unittest.TestCase):
 
             undo_context_param = get_mock_call_parameters(self, mock_set_context, UNDO_CONTEXT)
 
-            print "Undo, restore last task"
+            print("Undo, restore last task")
             mock_speak_dialog.reset_mock()
             mock_remove_context.reset_mock()
             mock_set_context.reset_mock()
@@ -811,14 +815,15 @@ class CompleteTask(unittest.TestCase):
 
 
 #@unittest.skip("Skip CompleteList")
-@ut_disabled
+@unittest.skipIf(not config_file_path.is_file(),"Skip due to no config file")
 class CompleteList(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
-        config.read(CONFIG_FILE)
-        cow_rest.api_key = config.get('auth', 'api_key')
-        cow_rest.secret = config.get('auth', 'secret')
+        if config_file_path.is_file():
+            config.read(CONFIG_FILE)
+            cow_rest.api_key = config.get('auth', 'api_key')
+            cow_rest.secret = config.get('auth', 'secret')
         cls.task_name_1 = 'cows lists test item: ' + str(uuid.uuid1())
         cls.task_name_2 = 'cows lists test item: ' + str(uuid.uuid1())
         cls.list_name = 'test list'
@@ -829,7 +834,7 @@ class CompleteList(unittest.TestCase):
         # Set up interface
         operation_init(self)
 
-        print "Clear the list"
+        print("Clear the list")
         list_name = 'test list'
         list_best_match = find_list(self, list_name, match=True)
         complete_list_explain(self, list_best_match.name, list_best_match)
@@ -854,7 +859,7 @@ class CompleteList(unittest.TestCase):
         # Set up interface
         operation_init(self)
 
-        print "Clear the list"
+        print("Clear the list")
         list_name = 'test list'
         list_best_match = find_list(self, list_name, match=True)
         complete_list_explain(self, list_best_match.name,
@@ -886,7 +891,7 @@ class CompleteList(unittest.TestCase):
                                                           mock_set_context,
                                                           UNDO_CONTEXT)
 
-            print "Undo, restore last task"
+            print("Undo, restore last task")
             mock_speak_dialog.reset_mock()
             mock_remove_context.reset_mock()
             mock_set_context.reset_mock()
@@ -903,7 +908,7 @@ class CompleteList(unittest.TestCase):
         # Set up interface
         operation_init(self)
 
-        print "Clear the list"
+        print("Clear the list")
         list_name = 'test list'
         list_best_match = find_list(self, list_name, match=True)
         complete_list_explain(self, list_best_match.name,
@@ -937,7 +942,7 @@ class CompleteList(unittest.TestCase):
             find_task_on_list(self, self.task_name_1, list_name, no_match=True)
             find_task_on_list(self, self.task_name_2, list_name, no_match=True)
 
-            print "Undo, restore last tasks"
+            print("Undo, restore last tasks")
             mock_speak_dialog.reset_mock()
             mock_remove_context.reset_mock()
             mock_set_context.reset_mock()
@@ -956,7 +961,7 @@ class CompleteList(unittest.TestCase):
         # Set up interface
         operation_init(self)
 
-        print "Clear the list"
+        print("Clear the list")
         list_name = 'test list'
         list_best_match = find_list(self, list_name, match=True)
         complete_list_explain(self, list_best_match.name,
@@ -985,14 +990,15 @@ class CompleteList(unittest.TestCase):
 
 
 #@unittest.skip("Skip Complete")
-@ut_disabled
+@unittest.skipIf(not config_file_path.is_file(),"Skip due to no config file")
 class Complete(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
-        config.read(CONFIG_FILE)
-        cow_rest.api_key = config.get('auth', 'api_key')
-        cow_rest.secret = config.get('auth', 'secret')
+        if config_file_path.is_file():
+            config.read(CONFIG_FILE)
+            cow_rest.api_key = config.get('auth', 'api_key')
+            cow_rest.secret = config.get('auth', 'secret')
         cls.task_name_1 = 'cows lists test item: ' + str(uuid.uuid1())
         cls.task_name_2 = 'cows lists test item: ' + str(uuid.uuid1())
         cls.list_name = 'test list'
@@ -1005,10 +1011,10 @@ class Complete(unittest.TestCase):
 
         list_best_match = find_list(self, self.list_name, match=True)
 
-        print "Clear the list"
+        print("Clear the list")
         complete_list_explain(self, list_best_match.name, list_best_match)
 
-        print "Add test tasks"
+        print("Add test tasks")
         add_task_to_list_by_name(self, self.list_name, self.task_name_1 )
         add_task_to_list_by_name(self, self.list_name, self.task_name_2 )
 
@@ -1038,10 +1044,10 @@ class Complete(unittest.TestCase):
 
         list_best_match = find_list(self, "test list", match=True)
 
-        print "Clear the list"
+        print("Clear the list")
         complete_list_explain(self, list_best_match.name, list_best_match)
 
-        print "Add test tasks"
+        print("Add test tasks")
         add_task_to_list_by_name(self, self.list_name, self.task_name_1 )
         add_task_to_list_by_name(self, self.list_name, self.task_name_2 )
 
@@ -1076,14 +1082,15 @@ class Complete(unittest.TestCase):
 
 
 #@unittest.skip("Skip TestReadList")
-@ut_disabled
+@unittest.skipIf(not config_file_path.is_file(),"Skip due to no config file")
 class TestReadList(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
-        config.read(CONFIG_FILE)
-        cow_rest.api_key = config.get('auth', 'api_key')
-        cow_rest.secret = config.get('auth', 'secret')
+        if config_file_path.is_file():
+            config.read(CONFIG_FILE)
+            cow_rest.api_key = config.get('auth', 'api_key')
+            cow_rest.secret = config.get('auth', 'secret')
         cls.task_name_1 = 'cows lists test item: ' + str(uuid.uuid1())
         cls.task_name_2 = 'cows lists test item: ' + str(uuid.uuid1())
         cls.list_name = 'test list'
@@ -1094,7 +1101,7 @@ class TestReadList(unittest.TestCase):
         # Set up interface
         operation_init(self)
 
-        print "Clear the list"
+        print("Clear the list")
         list_name = 'test list'
         list_best_match = find_list(self, list_name, match=True)
         complete_list_explain(self, list_best_match.name, list_best_match)
@@ -1117,7 +1124,7 @@ class TestReadList(unittest.TestCase):
         # Set up interface
         operation_init(self)
 
-        print "Clear the list"
+        print("Clear the list")
         list_name = 'test list'
         list_best_match = find_list(self, list_name, match=True)
         complete_list_explain(self, list_best_match.name,
@@ -1147,7 +1154,7 @@ class TestReadList(unittest.TestCase):
         # Set up interface
         operation_init(self)
 
-        print "Clear the list"
+        print("Clear the list")
         list_name = 'test list'
         list_best_match = find_list(self, list_name, match=True)
         complete_list_explain(self, list_best_match.name,
@@ -1175,14 +1182,15 @@ class TestReadList(unittest.TestCase):
 
 
 #@unittest.skip("Skip TestReadList")
-@ut_disabled
+@unittest.skipIf(not config_file_path.is_file(),"Skip due to no config file")
 class TestRead(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
-        config.read(CONFIG_FILE)
-        cow_rest.api_key = config.get('auth', 'api_key')
-        cow_rest.secret = config.get('auth', 'secret')
+        if config_file_path.is_file():
+            config.read(CONFIG_FILE)
+            cow_rest.api_key = config.get('auth', 'api_key')
+            cow_rest.secret = config.get('auth', 'secret')
         cls.task_name_1 = 'cows lists test item: ' + str(uuid.uuid1())
         cls.task_name_2 = 'cows lists test item: ' + str(uuid.uuid1())
         cls.list_name = 'test list'
@@ -1218,7 +1226,7 @@ class TestRead(unittest.TestCase):
         # Set up interface
         operation_init(self)
 
-        print "Clear the list"
+        print("Clear the list")
         list_name = 'test list'
         list_best_match = find_list(self, list_name, match=True)
         complete_list_explain(self, list_best_match.name,
@@ -1248,14 +1256,15 @@ class TestRead(unittest.TestCase):
 
 
 #@unittest.skip("Skip DueOnList")
-@ut_disabled
+@unittest.skipIf(not config_file_path.is_file(),"Skip due to no config file")
 class TestDueOnList(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
-        config.read(CONFIG_FILE)
-        cow_rest.api_key = config.get('auth', 'api_key')
-        cow_rest.secret = config.get('auth', 'secret')
+        if config_file_path.is_file():
+            config.read(CONFIG_FILE)
+            cow_rest.api_key = config.get('auth', 'api_key')
+            cow_rest.secret = config.get('auth', 'secret')
         cls.task_name_1 = 'cows lists test item: ' + str(uuid.uuid1()) + ' tomorrow'
         cls.task_name_2 = 'cows lists test item: ' + str(uuid.uuid1()) + ' yesterday'
         cls.list_name = 'test'
@@ -1266,7 +1275,7 @@ class TestDueOnList(unittest.TestCase):
         # Set up interface
         operation_init(self)
 
-        print "Clear the list"
+        print("Clear the list")
         list_best_match = find_list(self, "test list", match=True)
         complete_list_explain(self, list_best_match.name, list_best_match)
 
@@ -1282,14 +1291,14 @@ class TestDueOnList(unittest.TestCase):
 
             mock_call_sequence(self, mock_remove_context, ['TaskContext'])
             mock_call_sequence(self, mock_set_context, [LIST_CONTEXT])
-            mock_call_sequence(self, mock_speak_dialog, ['NoTaskOnList'])
+            mock_call_sequence(self, mock_speak_dialog, ['NoTaskOnList', 'WithDueDate'])
 
 
     def test_due_on_list_one_item(self):
         # Set up interface
         operation_init(self)
 
-        print "Clear the list"
+        print("Clear the list")
         list_best_match = find_list(self, "test list", match=True)
         complete_list_explain(self, list_best_match.name,
                               list_best_match)
@@ -1320,7 +1329,7 @@ class TestDueOnList(unittest.TestCase):
         # Set up interface
         operation_init(self)
 
-        print "Clear the list"
+        print("Clear the list")
         list_best_match = find_list(self, "test list", match=True)
         complete_list_explain(self, list_best_match.name,
                               list_best_match)
@@ -1349,14 +1358,15 @@ class TestDueOnList(unittest.TestCase):
 
 
 #@unittest.skip("Skip Due")
-@ut_disabled
+@unittest.skipIf(not config_file_path.is_file(),"Skip due to no config file")
 class TestDue(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cowsLists = CowsLists()
-        config.read(CONFIG_FILE)
-        cow_rest.api_key = config.get('auth', 'api_key')
-        cow_rest.secret = config.get('auth', 'secret')
+        if config_file_path.is_file():
+            config.read(CONFIG_FILE)
+            cow_rest.api_key = config.get('auth', 'api_key')
+            cow_rest.secret = config.get('auth', 'secret')
         cls.task_name_1 = 'cows lists test item: ' + str(uuid.uuid1()) + ' tomorrow'
         cls.task_name_2 = 'cows lists test item: ' + str(uuid.uuid1()) + ' yesterday'
         cls.list_name = 'test'
@@ -1394,7 +1404,7 @@ class TestDue(unittest.TestCase):
         # Set up interface
         operation_init(self)
 
-        print "Clear the list"
+        print("Clear the list")
         list_best_match = find_list(self, "test list", match=True)
         complete_list_explain(self, list_best_match.name,
                               list_best_match)
