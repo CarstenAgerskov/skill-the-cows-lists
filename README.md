@@ -7,6 +7,7 @@ The skill use Remember The Milk's [rest interface](https://www.rememberthemilk.c
 The purpose if the skill is to allow operations suited for a voice interface. It is not an attempt to cover all functionality of remember the milk.
 
 An authentication flow must be executed before other operations can be done, see section [Configuration](##Configuration)
+Some advice on installation can be found in section [Installation](##Installation)
 
 ### The dialog
 The cows lists work with lists and tasks. When you mention a list or a task in a command to the cows lists,
@@ -114,6 +115,56 @@ You receive the mail, it is not sent the skill developer. The mail contains deta
 and you decide what information to put in the issue report.
 
 Other issues that are not caught as describe above, can be reported as well, on https://github.com/CarstenAgerskov/skill-the-cows-lists/issues
+
+## Installation
+The best way to install the cows lists is to use Mycroft. Say:
+
+* "Hey Mycroft, install the cows lists"
+
+Or use [msm](https://mycroft.ai/documentation/msm/) from the command line.
+
+When a new version of the Mycroft core is released, it may take some time
+for the Mycroft team to accept the skill. It is verified that the Skill
+still passes all tests and standards. During that time, the skill cannot
+be installed using the methods above. Likewise, it may take some time
+for emergency patches to pass the acceptance.
+
+It is possible to install the skill directly from my repository instead,
+risking the consequences of the skill not passing the acceptance by the
+Mycroft team. And the skill will not auto update in case of new features
+or bugfixes.
+
+I maintain a numnber of branches, corresponding to the Mycroft version.
+
+The following commands installs the skill manually, replace branch "origin/18.2.6b" below
+with the branch that best corresponds to the mycroft version you are running:
+```
+cd /opt/mycroft/skills/
+git clone https://github.com/CarstenAgerskov/skill-the-cows-lists.git carstena-the-cows-lists
+cd carstena-the-cows-lists/
+git checkout origin/18.2.6b
+```
+
+Either install requirements on a Python 3 based Mycroft
+```
+cd <your mycroft-core directory>
+# When using bash/zsh use source as shown below, otherwise consult the venv documentation
+source .venv/bin/activate
+cd /opt/mycroft/skills/carstena-the-cows-lists/
+pip install -r requirements.txt
+
+```
+
+
+Or install requirements on a Python 2 based Mycroft
+```
+workon mycroft
+pip install -r requirements.txt
+```
+
+Branch 18.02, is for python 2 based Mycroft cores.
+Branch 18.2.6b is for python 3 based Mycroft cores.
+
 
 ## Configuration
 To access your Remember The Milk account via the rest API, it is neccesary to apply for an API key at
