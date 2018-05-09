@@ -136,14 +136,28 @@ or bugfixes.
 
 I maintain a numnber of branches, corresponding to the Mycroft version.
 
-The following commands installs the skill manually, replace \<branch> with
-the branch that best corresponds to the mycroft version you are running:
+The following commands installs the skill manually, replace branch "origin/18.2.6b" below
+with the branch that best corresponds to the mycroft version you are running:
 ```
 cd /opt/mycroft/skills/
-workon mycroft
 git clone https://github.com/CarstenAgerskov/skill-the-cows-lists.git carstena-the-cows-lists
-cd carstena-the-cows-lists
-git checkout <branch>
+cd carstena-the-cows-lists/
+git checkout origin/18.2.6b
+```
+
+Either install requirements on a Python 3 based Mycroft
+```
+cd <your mycroft-core directory>
+# When using bash/zsh use source as shown below, otherwise consult the venv documentation
+source .venv/bin/activate
+cd /opt/mycroft/skills/carstena-the-cows-lists/
+pip install -r requirements.txt
+
+```
+
+
+Or install requirements on a Python 2 based Mycroft
+```
 workon mycroft
 pip install -r requirements.txt
 ```
