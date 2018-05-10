@@ -6,7 +6,8 @@ This skill adds [Remember The Milk](https://www.rememberthemilk.com/) support to
 The skill use Remember The Milk's [rest interface](https://www.rememberthemilk.com/services/api/).
 The purpose if the skill is to allow operations suited for a voice interface. It is not an attempt to cover all functionality of remember the milk.
 
-An authentication flow must be executed before other operations can be done, see section [Configuration](##Configuration)
+An authentication flow must be executed before other operations can be
+done, see section [Configuration](##Configuration)
 Some advice on installation can be found in section [Installation](##Installation)
 
 ### The dialog
@@ -122,6 +123,16 @@ The best way to install the cows lists is to use Mycroft. Say:
 * "Hey Mycroft, install the cows lists"
 
 Or use [msm](https://mycroft.ai/documentation/msm/) from the command line.
+
+**IMPORTANT**: If you already have a version of the cows lists that was
+installed before Mycroft-core version 18.02, you have to manually remove it,
+like this:
+```
+cd /opt/mycroft/skills/
+rm -rf skill-the-cows-lists
+```
+Also, moving from pre 18.02 versions, you probably have to do the
+[Configuration](##Configuration) again.
 
 When a new version of the Mycroft core is released, it may take some time
 for the Mycroft team to accept the skill. It is verified that the Skill
