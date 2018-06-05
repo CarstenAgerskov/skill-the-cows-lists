@@ -111,3 +111,4 @@ venv.bak/
 
 # Mycroft related
 settings.json
+skill_developers_testrunner.py

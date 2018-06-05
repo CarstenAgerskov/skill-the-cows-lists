@@ -1,0 +1,14 @@
+This mail contains details of an exception in the cows lists<br>
+Please report the issue at
+<a href = "https://github.com/CarstenAgerskov/skill-the-cows-lists/issues">https://github.com/CarstenAgerskov/skill-the-cows-lists/issues</a>
+<br>
+When reporting the issue, you decide what information to include,
+or if you wish to anonymize any data.
+Please provide the following information:<br><br>
+* A description of your dialog with Mycroft<br>
+* Any other details that may help<br>
+* The last utterance below<br>
+* The exception text below<br><br>
+Utterance: {utterance}
+<br><br>
+Exception: {exception}

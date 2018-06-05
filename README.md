@@ -122,8 +122,6 @@ The best way to install the cows lists is to use Mycroft. Say:
 
 * "Hey Mycroft, install the cows lists"
 
-Or use [msm](https://mycroft.ai/documentation/msm/) from the command line.
-
 **IMPORTANT**: If you already have a version of the cows lists that was
 installed before Mycroft-core version 18.02, you have to manually remove it,
 like this:
@@ -134,21 +132,36 @@ rm -rf skill-the-cows-lists
 Also, moving from pre 18.02 versions, you probably have to do the
 [Configuration](##Configuration) again.
 
+### Branches
+The cows lists code use a number of branches. The “production branches”
+are named after Mycroft versions, like for instance 18.2.6b for the
+Python 3 version of the cows lists.
+The production versions has passed Mycroft testrunner, and the unit
+tests in the cows lists are tested by users, and are intended to be
+installed by the Mycroft installer upon request, as described above.
+
+The "developemnt branch", called dev, has passed Mycroft testrunner,
+and the unit tests in the cows lists. However, it has not been tested
+by a real user, speaking to Mycroft. The development branch will
+receive new features first, if you decide to try it out I would welcome
+any feedback. Any errors or improvements are easier to fix on the
+development branch.
+
+## Manual installation
 When a new version of the Mycroft core is released, it may take some time
 for the Mycroft team to accept the skill. It is verified that the Skill
 still passes all tests and standards. During that time, the skill cannot
-be installed using the methods above. Likewise, it may take some time
-for emergency patches to pass the acceptance.
+be installed using the Mycroft speech interface. Likewise, it may take
+some time for emergency patches to pass the acceptance.
 
 It is possible to install the skill directly from my repository instead,
 risking the consequences of the skill not passing the acceptance by the
 Mycroft team. And the skill will not auto update in case of new features
 or bugfixes.
 
-I maintain a numnber of branches, corresponding to the Mycroft version.
-
-The following commands installs the skill manually, replace branch "origin/18.2.6b" below
-with the branch that best corresponds to the mycroft version you are running:
+The following commands installs the skill manually, replace branch
+"origin/18.2.6b" below with the branch that best corresponds to the
+mycroft version you are running:
 ```
 cd /opt/mycroft/skills/
 git clone https://github.com/CarstenAgerskov/skill-the-cows-lists.git carstena-the-cows-lists
