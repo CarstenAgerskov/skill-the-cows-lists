@@ -1,0 +1,1 @@
+was auf (meiner )?(?P<listName>.+) Liste ist (?P<dueDate>(jetzt|gestern|heute|morgen|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)) fallig$

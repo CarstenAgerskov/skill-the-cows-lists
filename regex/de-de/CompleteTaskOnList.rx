@@ -1,0 +1,2 @@
+(?P<taskName>.+) auf (meine )?(?P<listName>.+) Liste abschließen$
+schließe (?P<listName>.+) mit (?P<taskName>.+) ab$

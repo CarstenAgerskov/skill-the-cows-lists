@@ -1,0 +1,24 @@
+{
+  "AddTask": ["add (?P<taskName>.+)"],
+  "AddTaskToList": [
+    "add (?P<taskName>.+) to (my|the) (?P<listName>.+) list$",
+    "add (?P<taskName>.+) to list (?P<listName>.+)$"],
+  "FindTask": ["find (?P<taskName>.+)"],
+  "FindTaskOnList": [
+    "find (?P<taskName>.+) on (my|the) (?P<listName>.+) list$",
+    "find (?P<taskName>.+) on list (?P<listName>.+)$"],
+  "CompleteTask": ["complete (?!(all))(?P<taskName>.+)"],
+  "CompleteTaskOnList": [
+    "complete (?P<taskName>.+) on (my|the) (?P<listName>.+) list$",
+    "complete (?P<taskName>.+) on list (?P<listName>.+)$"],
+  "CompleteList" : [
+    "complete all (task(s)?|item(s)?) on (my|the) (?P<listName>.+) list$",
+    "complete all (task(s)?|item(s)?) on list (?P<listName>.+)$"],
+  "CompleteAll": ["complete all task(s)?"],
+  "CompleteTaskInContext": ["complete (it|task)$"],
+  "ReadList": ["read (my|the) (?P<listName>.+) list$",
+               "read list (?P<listName>.+)$"],
+  "Read": ["read( it| the list| my list)?$"],
+  "DueOnList" : ["(what is|what's) on (my|the) (?P<listName>.+) list (?P<dueDate>.+)$"],
+  "Due" : ["(what is|what's) due (?P<dueDate>.+)$"]
+}
