@@ -1,0 +1,2 @@
+füge (?P<taskName>.+) zu (meiner )?(?P<listName>.+) Liste hinzu$
+füge (?P<taskName>.+) zu Liste (?P<listName>.+)$

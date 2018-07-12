@@ -1,0 +1,2 @@
+lese (eine )?(?P<listName>.+) liste$
+lese liste (?P<listName>.+)$
