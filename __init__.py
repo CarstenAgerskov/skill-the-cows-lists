@@ -69,8 +69,10 @@ class CowsLists(MycroftSkill):
         self.no_keyword = None
         self.yes_keyword = None
         self.local_regex = {}
+        self.vocab_dir = None
 
     def initialize(self):
+        self.vocab_dir = HOME_DIR + '/vocab/' + self.lang
         self.no_keyword = open(self.vocab_dir + '/NoKeyword.voc', 'r').read()
         self.yes_keyword = open(self.vocab_dir + '/YesKeyword.voc', 'r').read()
         local_regex = json.loads(
