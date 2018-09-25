@@ -69,15 +69,14 @@ class CowsLists(MycroftSkill):
         self.no_keyword = None
         self.yes_keyword = None
         self.local_regex = {}
-        self.vocab_dir = None
 
     def initialize(self):
-        self.vocab_dir = HOME_DIR + '/vocab/' + self.lang
-        self.no_keyword = open(self.vocab_dir + '/NoKeyword.voc', 'r').read()
-        self.yes_keyword = open(self.vocab_dir + '/YesKeyword.voc', 'r').read()
-        local_regex = json.loads(
-            open(HOME_DIR + '/regex/' + self.lang + '/LocalRegex.json', 'r')
-                .read())
+        with open(self.find_resource("NoKeyword.voc", "vocab"), 'r') as no_keyword_file, \
+            open(self.find_resource("YesKeyword.voc", "vocab"), 'r') as yes_keyword_file, \
+            open(self.find_resource("LocalRegex.json", "regex"), 'r') as local_regex_file:
+            self.no_keyword = no_keyword_file.read()
+            self.yes_keyword = yes_keyword_file.read()
+            local_regex = json.loads(local_regex_file.read())
 
         for key, value in local_regex.items():
             self.local_regex.update({key: [re.compile(v) for v in value]})
