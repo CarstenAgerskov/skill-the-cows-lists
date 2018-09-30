@@ -1,6 +1,6 @@
 """
 skill the-cows-lists
-Copyright (C) 2018  Carsten Agerskov
+Copyright (C) 2017-2018  Carsten Agerskov
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,7 +28,6 @@ LINE_PARAMETER = "lineNumber"
 NOF_TASK_PARAMETER = "nofTask"
 DUE_PARAMETER = "dueDate"
 UNDO_CONTEXT = "UndoContext"
-EXCEPTION_CONTEXT = "ExceptionContext"
 LIST_CONTEXT = "ListContext"
 TASK_CONTEXT = "TaskContext"
 TEST_CONTEXT = "_TestContext"
@@ -37,7 +36,7 @@ MAX_TASK_COMPLETE = 40
 LIST_TUPLE = namedtuple('list', 'name, id, significance, due, filter, task_list')
 
 TASK_LIST_TUPLE = namedtuple('task',
-    'name, id, taskseries_id, significance, due, list_tuple')
+    'name, id, taskseries_id, significance, due, has_due_time, priority, list_tuple')
 
 FILTER_DIALOG = namedtuple('filter_dialog',
                            'no_task_on_list, due_date, read_list')
@@ -48,3 +47,4 @@ FIND_LIST_DIALOG = namedtuple('find_list_dialog', 'using_another_list')
 
 FIND_TASK_DIALOG = namedtuple('find_task_dialog', 'find_task_on_list, find_task_on_list_mismatch')
 
+TASK_DIALOG = namedtuple('task_dialog', 'due_date, due_time, priority')

@@ -127,7 +127,10 @@ class TestOperations(unittest.TestCase):
         flat_task_list = cow_rest.flat_task_list(task_list)
         self.assertTrue(len([x for x in flat_task_list if x['task_name'] == task_name
                                              and x['taskseries_id'] == taskseries_id
-                                             and x['task_id'] == task_id]) > 0)
+                                             and x['task_id'] == task_id
+                                             and x['due'] == ''
+                                             and x['has_due_time'] == '0'
+                                             and x['priority'] == 'N']) > 0)
 
         # mark task as complete
         transaction_id, error_text, error_code = cow_rest.complete_task(task_id, taskseries_id, list_id)

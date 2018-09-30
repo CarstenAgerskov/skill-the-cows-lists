@@ -61,6 +61,7 @@ The skill is using Remember The Milk ["smart add"](https://www.rememberthemilk.c
 
 will add a task called "remember to call home" to the Remember The Milk's Inbox, and set the due date to tomorrow at 9. See also the due command later in this section.
 
+
 #### Complete task
 Complete a task on a list, the operation can be undone within 2 minutes:
 * You: "Hey Mycroft, complete call home on my personal list"
@@ -85,10 +86,13 @@ Find out what tasks are due. Due date can be one of: "now, yesterday, today, tom
 * You: "Hey Mycroft, what is on my inbox list today"
 * Mycroft: "List inbox has 2 tasks on it, call home, go fishing"
 
-* You: "Hey Mycroft, add go fishing today to the inbox list"
-* Mycroft: "go fishing today was added to list inbox"
-* You: "Hey Mycroft, what is due today"
-* Mycroft: "List inbox has 1 task on it, that are due today, go fishing"
+* You: "Hey Mycroft, add go fishing tomorrow at 7am to the inbox list"
+* Mycroft: "go fishing tomorrow at 7am was added to list inbox"
+* You: "Hey Mycroft, what is due tomorrow"
+* Mycroft: "List inbox has 1 task on it, that is due tomorrow, go fishing, at 7 am"
+
+A tasks is only mentioned if it has a due date has been set.
+A due time is only mentioned (after the task), if a time has been set.
 
 #### Find task on list
 Find a task on a list:
@@ -132,6 +136,10 @@ rm -rf skill-the-cows-lists
 Also, moving from pre 18.02 versions, you probably have to do the
 [Configuration](##Configuration) again.
 
+### Time Zone
+If you work with due dates on tasks, make sure that remember the milk
+and Mycroft agree on the time zone.
+
 ### Branches
 The cows lists code use a number of branches. The “production branches”
 are named after Mycroft versions, like for instance 18.2.6b for the
@@ -160,16 +168,18 @@ Mycroft team. And the skill will not auto update in case of new features
 or bugfixes.
 
 The following commands installs the skill manually, replace branch
-"origin/18.2.6b" below with the branch that best corresponds to the
+"origin/dev" below with the branch that best corresponds to the
 mycroft version you are running:
 ```
 cd /opt/mycroft/skills/
 git clone https://github.com/CarstenAgerskov/skill-the-cows-lists.git carstena-the-cows-lists
 cd carstena-the-cows-lists/
-git checkout origin/18.2.6b
+git checkout origin/dev
 ```
 
-Either install requirements on a Python 3 based Mycroft
+Re-read the "Installation" section of the README.md after checkout, there may be some specifics for the branch you have chosen.
+
+For branch "origin/dev", do the following:
 ```
 cd <your mycroft-core directory>
 # When using bash/zsh use source as shown below, otherwise consult the venv documentation
@@ -178,16 +188,6 @@ cd /opt/mycroft/skills/carstena-the-cows-lists/
 pip install -r requirements.txt
 
 ```
-
-
-Or install requirements on a Python 2 based Mycroft
-```
-workon mycroft
-pip install -r requirements.txt
-```
-
-Branch 18.02, is for python 2 based Mycroft cores.
-Branch 18.2.6b is for python 3 based Mycroft cores.
 
 
 ## Configuration
@@ -224,6 +224,11 @@ to mycroft.conf:
 The cows lists is tested against a normal remember the milk account, not a Pro account.
 The language is set to "English US" in remember the milk, under settings->account. I have reports that 
 some different language settings do not work with the cows lists.
+
+If you use due dates and times and and they don't match what you expect,
+be sure that Mycroft and remember the milk is operating in the same time zone.
+Mycroft derives its time zone from the location you set for the device on Mycroft home.
+Remember the milk derive its time zone from your location, or you can configure a fixed time zone.
 
 #### If your token expire or become invalid
 On rare occasions the token may expire or become invalid. In that case you must repeat the steps above.

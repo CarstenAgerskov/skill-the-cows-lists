@@ -109,22 +109,37 @@ def flat_task_list(task_list):
                     for x in t['task']:
                         flat_task.append({'task_name': t['name'],
                                           'taskseries_id': t['id'],
-                                          'task_id': x['id']})
+                                          'task_id': x['id'],
+                                          'due': x['due'],
+                                          'has_due_time': x['has_due_time'],
+                                          'priority': x['priority']})
                 else:
-                    flat_task.append({'task_name': t['name'],
-                                      'taskseries_id': t['id'],
-                                      'task_id' : t['task']['id']})
+                    flat_task.append(
+                        {'task_name': t['name'],
+                         'taskseries_id': t['id'],
+                          'task_id' : t['task']['id'],
+                          'task_due': t['task']['due'],
+                          'has_due_time': t['task']['has_due_time'],
+                          'priority': t['task']['priority']})
+
         else:
             if isinstance(taskseries['taskseries']['task'], list):
                 for x in taskseries['taskseries']['task']:
                     flat_task.append(
                         {'task_name': taskseries['taskseries']['name'],
                          'taskseries_id': taskseries['taskseries']['id'],
-                         'task_id': x['id']})
+                         'task_id': x['id'],
+                         'task_due': x['due'],
+                         'has_due_time': x['has_due_time'],
+                         'priority': x['priority']})
             else:
-                flat_task.append({ 'task_name': taskseries['taskseries']['name'],
-                               'taskseries_id': taskseries['taskseries']['id'],
-                               'task_id': taskseries['taskseries']['task']['id']})
+                flat_task.append(
+                    { 'task_name': taskseries['taskseries']['name'],
+                      'taskseries_id': taskseries['taskseries']['id'],
+                      'task_id': taskseries['taskseries']['task']['id'],
+                      'task_due': taskseries['taskseries']['task']['due'],
+                      'has_due_time': taskseries['taskseries']['task']['has_due_time'],
+                      'priority': taskseries['taskseries']['task']['priority']})
 
 
     return flat_task

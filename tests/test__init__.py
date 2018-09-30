@@ -1,7 +1,7 @@
 from __future__ import print_function
 import traceback
-from future import standard_library
-standard_library.install_aliases()
+#from future import standard_library
+#standard_library.install_aliases()
 from builtins import str
 from builtins import range
 import configparser
@@ -13,13 +13,17 @@ from unittest.mock import patch, ANY, MagicMock
 from mycroft.messagebus.message import Message
 from __init__ import CowsLists
 from pathlib import Path
+
 from constants import TASK_PARAMETER, LIST_PARAMETER, BEST_MATCH_PARAMETER, \
     ERROR_TEXT_PARAMETER, ERROR_CODE_PARAMETER, FUNCTION_NAME_PARAMETER, \
     LINE_PARAMETER, NOF_TASK_PARAMETER, DUE_PARAMETER, UNDO_CONTEXT, \
-    EXCEPTION_CONTEXT, LIST_CONTEXT, TASK_CONTEXT, TEST_CONTEXT, \
-    MAX_TASK_COMPLETE, \
-    LIST_TUPLE, TASK_LIST_TUPLE, FILTER_DIALOG, ADD_TASK_DIALOG, \
-    FIND_LIST_DIALOG, FIND_TASK_DIALOG
+    LIST_CONTEXT, TASK_CONTEXT, TEST_CONTEXT, \
+    MAX_TASK_COMPLETE
+
+from model import create_filter_dialog, create_add_task_dialog, \
+    create_find_list_dialog, create_find_task_dialog, create_list_tuple, \
+    create_task_dialog, create_task_tuple, create_task_filter, cows_filter, \
+    flat_task_list
 
 LANGUAGE = 'en-us'
 config = configparser.ConfigParser()
@@ -46,34 +50,17 @@ def add_task_to_list_by_name(self, list_name, task_name):
             patch('__init__.CowsLists.set_context')) as mock_set_context:
         self.assertTrue(
             self.cowsLists.add_task_to_list(
-                TASK_LIST_TUPLE(
-                    name=task_name,
-                    id=None,
-                    taskseries_id=None,
-                    significance=None,
-                    due=None,
-                    list_tuple=LIST_TUPLE(
-                        name=list_name,
-                        id=None,
-                        significance=None,
-                        due=None,
-                        filter="status:incomplete",
-                        task_list=None))))
+                create_task_tuple(task_name),
+                create_list_tuple(list_name)))
         mock_set_context.assert_any_call(UNDO_CONTEXT, ANY)
-        mock_set_context.assert_called_with(TASK_CONTEXT, ANY)
         self.assertFalse('RestResponseError' in  mock_speak_dialog.call_args_list)
 
 
 def find_list_by_name(self, list_name, match=False):
     with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, (
             patch('__init__.CowsLists.set_context')) as mock_set_context:
-        list_tuple = self.cowsLists.find_list(LIST_TUPLE(name=list_name,
-                                                              id=None,
-                                                              significance=None,
-                                                              due=None,
-                                                              filter="status:incomplete",
-                                                              task_list=None))
-        mock_set_context.assert_called_with(LIST_CONTEXT, ANY)
+        list_tuple = self.cowsLists.find_list(
+            create_list_tuple(list_name))
         self.assertFalse('RestResponseError' in  mock_speak_dialog.call_args_list)
         if match:
             self.assertEqual(list_name, list_tuple.name)
@@ -83,42 +70,27 @@ def find_list_by_name(self, list_name, match=False):
 def find_task_on_list_by_name(self, task_name, list_name, match=False, no_match=False):
     with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, (
             patch('__init__.CowsLists.set_context')) as mock_set_context:
-        task_tuple = self.cowsLists.find_task_on_list(
-            TASK_LIST_TUPLE(
-                name=task_name,
-                id=None,
-                taskseries_id=None,
-                significance=None,
-                due=None,
-                list_tuple=LIST_TUPLE(
-                    name=list_name,
-                    id=None,
-                    significance=None,
-                    due=None,
-                    filter='status:incomplete',
-                    task_list=None)))
+        list_tuple = self.cowsLists.find_task_on_list(
+            create_task_tuple(task_name),
+            create_list_tuple(list_name))
         if match:
-            self.assertTrue(task_tuple.id and task_tuple.name.lower() == task_name)
-            self.assertTrue(task_tuple.list_tuple.id and task_tuple.list_tuple.name == list_name)
+            self.assertTrue(list_tuple.id and list_tuple.name == list_name)
+            self.assertTrue(len(list_tuple.task_list) > 0 and list_tuple.task_list[0].id and list_tuple.task_list[0].name.lower() == task_name)
         if no_match:
-            self.assertFalse(task_tuple.id and task_tuple.name.lower() == task_name)
-            self.assertTrue(task_tuple.list_tuple.id and task_tuple.list_tuple.name == list_name)
+            self.assertTrue(list_tuple.id and list_tuple.name == list_name)
+            self.assertFalse(len(list_tuple.task_list) > 0 and list_tuple.task_list[0].id and list_tuple.task_list[0].name.lower() == task_name)
         self.assertFalse('RestResponseError' in  mock_speak_dialog.call_args_list)
-        mock_set_context.assert_any_call(LIST_CONTEXT, ANY)
-        return task_tuple
+        return list_tuple
 
 
 def complete_list_by_name(self, list_name):
     with patch('__init__.CowsLists.speak_dialog') as mock_speak_dialog, \
           patch('__init__.CowsLists.set_context'), \
           patch('__init__.CowsLists.remove_context'):
-        self.cowsLists.complete_list(LIST_TUPLE(name=list_name,
-                                                id=None,
-                                                significance=None,
-                                                due=None,
-                                                filter='status:incomplete',
-                                                task_list=None))
-        self.assertFalse('RestResponseError' in  mock_speak_dialog.call_args_list)
+        self.cowsLists.complete_list(
+            create_list_tuple(list_name))
+        self.assertFalse('RestResponseError' in
+                         mock_speak_dialog.call_args_list)
 
 
 def operation_init(self):
@@ -144,8 +116,7 @@ def get_mock_call_parameters(self, param_mock, first_param):
 def set_list_context(self, message, list_tuple):
     message.data.setdefault(LIST_CONTEXT,
                             json.dumps({'id': list_tuple.id,
-                                 'name': list_tuple.name,
-                                 'significance': list_tuple.significance}))
+                                 'name': list_tuple.name}))
 
 
 def set_task_context(self, message, task_tuple):
@@ -175,9 +146,8 @@ class TestFunctions(unittest.TestCase):
     def test_regex_evaluation_explain(self):
         message = Message(self)
         message.data.setdefault('utterance', 'not to be recognized')
-        k, m = self.cowsLists.regex_evaluation(message, ['ReadList'])
+        k, m = self.cowsLists.regex_eval.eval(message, ['ReadList'])
         self.assertEqual(m, None)
-        mock_call_sequence(self, CowsLists.speak_dialog, ['IDontUnderstand'])
 
 
 #@unittest.skip("Skip TestOperationInit")
@@ -399,7 +369,7 @@ class TestAddTaskToList(unittest.TestCase):
         self.cowsLists.add_task_to_list_intent(message)
 
         mock_call_sequence(self, CowsLists.remove_context, [UNDO_CONTEXT])
-        mock_call_sequence(self, CowsLists.set_context, [LIST_CONTEXT, UNDO_CONTEXT, TASK_CONTEXT])
+        mock_call_sequence(self, CowsLists.set_context, [UNDO_CONTEXT, LIST_CONTEXT, TASK_CONTEXT])
         mock_call_sequence(self, CowsLists.speak_dialog, ['AddTaskToList'])
         c = json.loads(get_mock_call_parameters(self, CowsLists.set_context, UNDO_CONTEXT))
         self.assertEqual('AddTaskToListUndo', str(c['dialog']))
@@ -422,7 +392,7 @@ class TestAddTaskToList(unittest.TestCase):
 
             mock_call_sequence(self, CowsLists.remove_context, [UNDO_CONTEXT])
             mock_call_sequence(self, CowsLists.set_context,
-                               [LIST_CONTEXT, UNDO_CONTEXT, TASK_CONTEXT])
+                               [UNDO_CONTEXT, LIST_CONTEXT, TASK_CONTEXT])
             mock_call_sequence(self, mock_get_response, ['UsingAnotherList'])
             mock_call_sequence(self, CowsLists.speak_dialog, ['AddTaskToList'])
             list_context_param = get_mock_call_parameters(
@@ -460,8 +430,8 @@ class TestAddTaskToList(unittest.TestCase):
 
             mock_call_sequence(self, CowsLists.remove_context, [UNDO_CONTEXT])
             mock_call_sequence(self, CowsLists.set_context,
-                               [UNDO_CONTEXT, TASK_CONTEXT, UNDO_CONTEXT,
-                                TASK_CONTEXT, LIST_CONTEXT])
+                               [UNDO_CONTEXT, UNDO_CONTEXT,
+                                LIST_CONTEXT, TASK_CONTEXT])
             mock_call_sequence(self, mock_get_response,
                                ['AnythingElse', 'AnythingElse'])
             mock_call_sequence(self, CowsLists.speak_dialog,
@@ -486,7 +456,7 @@ class TestAddTaskToList(unittest.TestCase):
 
             mock_call_sequence(self, CowsLists.remove_context, [UNDO_CONTEXT])
             mock_call_sequence(self, CowsLists.set_context,
-                               [UNDO_CONTEXT, TASK_CONTEXT, LIST_CONTEXT])
+                               [UNDO_CONTEXT, LIST_CONTEXT, TASK_CONTEXT])
             mock_call_sequence(self, mock_get_response, ['AnythingElse'])
             mock_call_sequence(self, CowsLists.speak_dialog,
                                ['AnythingElseEnd'])
@@ -503,7 +473,7 @@ class TestAddTaskToList(unittest.TestCase):
 
         mock_call_sequence(self, CowsLists.remove_context, [UNDO_CONTEXT])
         mock_call_sequence(self, CowsLists.set_context,
-                           [LIST_CONTEXT, UNDO_CONTEXT, TASK_CONTEXT])
+                           [UNDO_CONTEXT, LIST_CONTEXT, TASK_CONTEXT])
         mock_call_sequence(self, CowsLists.speak_dialog, ['AddTaskToList'])
         undo_context_param = get_mock_call_parameters(
             self, CowsLists.set_context, UNDO_CONTEXT)
@@ -715,7 +685,7 @@ class CompleteTaskOnList(unittest.TestCase):
 
         mock_call_sequence(self, CowsLists.remove_context, [UNDO_CONTEXT, TASK_CONTEXT])
         mock_call_sequence(self, CowsLists.speak_dialog, ['CompleteTaskOnList'])
-        mock_call_sequence(self, CowsLists.set_context, [LIST_CONTEXT, UNDO_CONTEXT])
+        mock_call_sequence(self, CowsLists.set_context, [UNDO_CONTEXT, LIST_CONTEXT])
 
         undo_context_param = get_mock_call_parameters(self, CowsLists.set_context, UNDO_CONTEXT)
 
@@ -749,7 +719,7 @@ class CompleteTaskOnList(unittest.TestCase):
 
         mock_call_sequence(self, CowsLists.remove_context, [UNDO_CONTEXT, TASK_CONTEXT])
         mock_call_sequence(self, CowsLists.speak_dialog, ['CompleteManyTasksOnList'])
-        mock_call_sequence(self, CowsLists.set_context, [LIST_CONTEXT, UNDO_CONTEXT])
+        mock_call_sequence(self, CowsLists.set_context, [UNDO_CONTEXT, LIST_CONTEXT])
 
         undo_context_param = get_mock_call_parameters(self, CowsLists.set_context, UNDO_CONTEXT)
 
@@ -811,7 +781,7 @@ class CompleteTask(unittest.TestCase):
         mock_call_sequence(self, CowsLists.speak_dialog,
                            ['CompleteTaskOnList'])
         mock_call_sequence(self, CowsLists.set_context,
-                           [LIST_CONTEXT, UNDO_CONTEXT])
+                           [UNDO_CONTEXT, LIST_CONTEXT])
 
     def test_complete_task_new_context(self):
         complete_list_by_name(self, self.list_name)
@@ -836,7 +806,7 @@ class CompleteTask(unittest.TestCase):
             mock_call_sequence(self, CowsLists.speak_dialog,
                                ['FindTaskOnListMismatch', 'CompleteTaskOnList'])
             mock_call_sequence(self, CowsLists.set_context,
-                               [LIST_CONTEXT, UNDO_CONTEXT])
+                               [UNDO_CONTEXT, LIST_CONTEXT])
             mock_call_sequence(self, mock_get_response,
                                ['UsingAnotherList', 'DoYouWantToCompleteIt'])
 
@@ -857,7 +827,7 @@ class CompleteTask(unittest.TestCase):
     def test_complete_task_context(self):
         complete_list_by_name(self, self.list_name)
         add_task_to_list_by_name(self, self.list_name, self.task_name_1 )
-        task_best_match = find_task_on_list_by_name(self, self.task_name_1,
+        list_tuple = find_task_on_list_by_name(self, self.task_name_1,
                                                     self.list_name, match=True)
 
         message = Message(self)
@@ -866,7 +836,7 @@ class CompleteTask(unittest.TestCase):
             self,
             self.list_name,
             match=True))
-        set_task_context(self, message, task_best_match)
+        set_task_context(self, message, list_tuple.task_list[0])
 
         self.cowsLists.complete_task_intent(message)
 
@@ -875,7 +845,7 @@ class CompleteTask(unittest.TestCase):
         mock_call_sequence(self, CowsLists.speak_dialog,
                            ['CompleteTaskOnList'])
         mock_call_sequence(self, CowsLists.set_context,
-                           [LIST_CONTEXT, UNDO_CONTEXT])
+                           [UNDO_CONTEXT, LIST_CONTEXT])
 
 
 #@unittest.skip("Skip CompleteList")
@@ -931,7 +901,7 @@ class CompleteList(unittest.TestCase):
         mock_call_sequence(self, CowsLists.remove_context,
                            [UNDO_CONTEXT, TASK_CONTEXT])
         mock_call_sequence(self, CowsLists.set_context,
-                           [LIST_CONTEXT, UNDO_CONTEXT])
+                           [UNDO_CONTEXT, LIST_CONTEXT])
         mock_call_sequence(self, CowsLists.speak_dialog,
                            ['CompleteListOneTask'])
 
@@ -974,7 +944,7 @@ class CompleteList(unittest.TestCase):
         mock_call_sequence(self, CowsLists.remove_context,
                            [UNDO_CONTEXT, TASK_CONTEXT])
         mock_call_sequence(self, CowsLists.set_context,
-                           [LIST_CONTEXT, UNDO_CONTEXT])
+                           [UNDO_CONTEXT, LIST_CONTEXT])
         mock_call_sequence(self, CowsLists.speak_dialog, ['CompleteList'])
 
         undo_context_param = get_mock_call_parameters(self,
@@ -1020,7 +990,7 @@ class CompleteList(unittest.TestCase):
         mock_call_sequence(self, CowsLists.remove_context,
                            [UNDO_CONTEXT, TASK_CONTEXT])
         mock_call_sequence(self, CowsLists.set_context,
-                           [LIST_CONTEXT, UNDO_CONTEXT])
+                           [UNDO_CONTEXT, LIST_CONTEXT])
         mock_call_sequence(
             self, CowsLists.speak_dialog,
             ['CompletePartOfListStart', 'CompleteListStart', 'CompleteList'])
@@ -1065,7 +1035,7 @@ class Complete(unittest.TestCase):
         mock_call_sequence(self, CowsLists.remove_context,
                            [UNDO_CONTEXT, TASK_CONTEXT])
         mock_call_sequence(self, CowsLists.set_context,
-                           [LIST_CONTEXT, UNDO_CONTEXT])
+                           [UNDO_CONTEXT, LIST_CONTEXT])
         mock_call_sequence(self, CowsLists.speak_dialog, ['CompleteList'])
 
         find_task_on_list_by_name(self, self.task_name_1, self.list_name, no_match=True)
@@ -1089,7 +1059,7 @@ class Complete(unittest.TestCase):
             mock_call_sequence(self, CowsLists.remove_context,
                                [UNDO_CONTEXT, TASK_CONTEXT])
             mock_call_sequence(self, CowsLists.set_context,
-                               [LIST_CONTEXT, UNDO_CONTEXT])
+                               [UNDO_CONTEXT, LIST_CONTEXT])
             mock_call_sequence(self, CowsLists.speak_dialog, ['CompleteList'])
             mock_call_sequence(self, mock_get_response, ['UsingAnotherList'])
 
@@ -1254,6 +1224,8 @@ class TestDueOnList(unittest.TestCase):
                            ' tomorrow')
         cls.task_name_2 = ('cows lists test item: ' + str(uuid.uuid1()) +
                            ' yesterday')
+        cls.task_name_3 = ('cows lists test item: ' + str(uuid.uuid1()) +
+                           ' tomorrow at 8pm')
         cls.list_name = 'test'
         cls.cowsLists.vocab_dir = cls.cowsLists._dir + "/vocab/" + cls.cowsLists.lang
         cls.cowsLists.initialize()
@@ -1309,6 +1281,7 @@ class TestDueOnList(unittest.TestCase):
         add_task_to_list_by_name(self, self.list_name, self.task_name_1)
         add_task_to_list_by_name(self, self.list_name, self.task_name_1)
         add_task_to_list_by_name(self, self.list_name, self.task_name_2)
+        add_task_to_list_by_name(self, self.list_name, self.task_name_3)
 
         with patch('__init__.CowsLists.speak'):
             message = Message(self)
@@ -1322,7 +1295,7 @@ class TestDueOnList(unittest.TestCase):
 
             mock_call_sequence(self, CowsLists.remove_context, ['TaskContext'])
             mock_call_sequence(self, CowsLists.set_context, [LIST_CONTEXT])
-            mock_call_sequence(self, CowsLists.speak_dialog, ['ReadList', 'WithDueDate'])
+            mock_call_sequence(self, CowsLists.speak_dialog, ['ReadList', 'WithDueDate', 'WithDueTime'])
 
 
 #@unittest.skip("Skip Due")
