@@ -1,4 +1,4 @@
-## Skill The Cows Lists
+## The Cows Lists
 Interact with "Remember The Milk" list and task management ecosystem.
 
 ## Description
@@ -124,16 +124,6 @@ The best way to install the cows lists is to use Mycroft. Say:
 
 Or use [msm](https://mycroft.ai/documentation/msm/) from the command line.
 
-**IMPORTANT**: If you already have a version of the cows lists that was
-installed before Mycroft-core version 18.02, you have to manually remove it,
-like this:
-```
-cd /opt/mycroft/skills/
-rm -rf skill-the-cows-lists
-```
-Also, moving from pre 18.02 versions, you probably have to do the
-[Configuration](##Configuration) again.
-
 When a new version of the Mycroft core is released, it may take some time
 for the Mycroft team to accept the skill. It is verified that the Skill
 still passes all tests and standards. During that time, the skill cannot
@@ -145,30 +135,24 @@ risking the consequences of the skill not passing the acceptance by the
 Mycroft team. And the skill will not auto update in case of new features
 or bugfixes.
 
-I maintain a numnber of branches, corresponding to the Mycroft version.
-
-The following commands installs the skill manually, replace branch "origin/18.8.1" below
-with the branch that best corresponds to the mycroft version you are running.
+The following commands installs the skill manually:
 ```
 cd /opt/mycroft/skills/
 git clone https://github.com/CarstenAgerskov/skill-the-cows-lists.git carstena-the-cows-lists
 cd carstena-the-cows-lists/
-git checkout origin/18.8.1
 ```
 
 Re-read the "Installation" section of the README.md after checkout,
 there may be some specifics for the branch you have chosen.
 
-For branch "origin/18.8.1", do the following:
+To be able to use the skill, some requirements must be installed:
 ```
 cd <your mycroft-core directory>
 # When using bash/zsh use source as shown below, otherwise consult the venv documentation
 source .venv/bin/activate
 cd /opt/mycroft/skills/carstena-the-cows-lists/
 pip install -r requirements.txt
-
 ```
-
 
 
 ## Configuration
